@@ -27,6 +27,7 @@ if __name__ == '__main__':
         model_cfg = EasyDict(yaml.full_load(f))
     get_seed(args.seed, printout=True)
     torch.cuda.empty_cache()
+    device = torch.device(f'cuda:{args.device}')
 
     tra_res = 2**(13 - int(np.log2(args.trasub)))
     test_res = 2**(13 - int(np.log2(args.testsub)))
@@ -41,6 +42,7 @@ if __name__ == '__main__':
                f'-cl{args.clevel}-ml{mlevel}' + \
                f'-seed{args.seed}'
     log_root = os.path.join(args.log_dir, f'exp1d/fno1d/{args.dataset_nm}')
+    os.makedirs(log_root, exist_ok=True)
     model_out_path = os.path.join(log_root, model_nm + '.pth')
     csv_out_path = os.path.join(log_root, model_nm + '.csv')
 
@@ -57,7 +59,7 @@ if __name__ == '__main__':
     model = FNO1d(model_cfg.modes, 
                   model_cfg.width,
                   clevel=args.clevel,
-                  mlevel=args.mlevel).cuda()
+                  mlevel=args.mlevel).to(device)
     print(count_params(model))
 
     ################################################################
@@ -70,7 +72,7 @@ if __name__ == '__main__':
     epochs = args.epochs
 
     myloss = LpLoss(size_average=False)
-    u_normalizer.cuda()
+    u_normalizer.to(device)
     test_l2_best = 1
 
     train_log = []
@@ -86,7 +88,7 @@ if __name__ == '__main__':
         train_l2 = 0
         for a, x, u in train_loader:
             bsz, seq_len = a.shape
-            a, x, u = a.cuda(), x.cuda(), u.cuda()
+            a, x, u = a.to(device), x.to(device), u.to(device)
             optimizer.zero_grad()
 
             u_ = model(a=a,x=x).reshape(bsz, seq_len)
@@ -107,7 +109,7 @@ if __name__ == '__main__':
         with torch.no_grad():
             for a, x, u in test_loader:
                 bsz, seq_len = a.shape
-                a, x, u = a.cuda(), x.cuda(), u.cuda()
+                a, x, u = a.to(device), x.to(device), u.to(device)
 
                 u_ = model(a=a, x=x).reshape(bsz, seq_len)
                 u_ = u_normalizer.decode(u_)

@@ -424,6 +424,8 @@ def get_arguments(parser):
                         help='random seed. (default: 0)')
     parser.add_argument('--save', type=int, default=0, 
                         help='save model. (default: 0)')
+    parser.add_argument('--device', type=int, default=0,
+                        help='device id.')
 
     # ===================================
     # for dataset
