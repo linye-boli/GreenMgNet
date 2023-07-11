@@ -76,14 +76,13 @@ class SpectralConvLite1d(nn.Module):
 # lowrank layer
 ################################################################
 class LowRank1d(nn.Module):
-    def __init__(self, in_channels, out_channels, rank=1):
+    def __init__(self, width, rank=1):
         super(LowRank1d, self).__init__()
-        self.in_channels = in_channels
-        self.out_channels = out_channels
+        self.width = width
         self.rank = rank
 
-        self.phi = DenseNet([2, 64, 128, 256, in_channels*out_channels*rank], torch.nn.ReLU)
-        self.psi = DenseNet([2, 64, 128, 256, in_channels*out_channels*rank], torch.nn.ReLU)
+        self.phi = DenseNet([2, 64, 128, 256, width*rank], torch.nn.ReLU)
+        self.psi = DenseNet([2, 64, 128, 256, width*rank], torch.nn.ReLU)
 
     def forward(self, v, a):
         # a (batch, n, 2)
@@ -91,12 +90,17 @@ class LowRank1d(nn.Module):
         batch_size = v.shape[0]
         n = v.shape[1]
 
-        phi_eval = self.phi(a).reshape(batch_size, n, self.out_channels, self.in_channels, self.rank)
-        psi_eval = self.psi(a).reshape(batch_size, n, self.out_channels, self.in_channels, self.rank)
+        phi_eval = self.phi(a).reshape(batch_size, n, self.width, self.rank)
+        psi_eval = self.psi(a).reshape(batch_size, n, self.width, self.rank)
 
-        v = torch.einsum('bnoir,bni,bmoir->bmo',psi_eval, v, phi_eval) / n
+        Q = rearrange(phi_eval, 'b l d h -> b h l d', d=self.width, h=self.rank)
+        K = rearrange(psi_eval, 'b l d h -> b h l d', d=self.width, h=self.rank)
+        V = rearrange(v, 'b l d -> b 1 l d', d=self.width)
 
-        return v
+        attn_map = torch.einsum('bhmd,bhmc->bhdc', K, V)
+        attn_out = torch.einsum('bhld,bhdc->blc', Q, attn_map)
+
+        return attn_out / n
 
 ################################################################
 # fourier transformer layer
@@ -137,6 +141,7 @@ class FourierAttention1d(nn.Module):
         attn_map = torch.einsum('bhmd,bhnd->bhmn', Q, K)
         attn_out = torch.einsum('bhmn,bhnd->bhmd', attn_map, V)
         attn_out = rearrange(attn_out, 'b h l d -> b l (h d)')
+
         attn_out = self.oproj(attn_out)
         attn_out = attn_out / n
 
