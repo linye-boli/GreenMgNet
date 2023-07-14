@@ -65,8 +65,9 @@ if __name__ == '__main__':
     ################################################################
     # training and evaluation
     ################################################################
-
+    # iterations = args.epochs*(args.ntrain//args.batch_size)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=iterations)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
 
     epochs = args.epochs
@@ -98,12 +99,12 @@ if __name__ == '__main__':
             u = u_normalizer.decode(u)
             loss = myloss(u_.view(bsz,-1), u.view(bsz,-1))
             loss.backward()
+            
             optimizer.step()
             train_mse += mse.item()
-            train_l2 += loss.item()
+            train_l2 += loss.item()        
 
         scheduler.step()
-
         model.eval()
         test_l2 = 0.0
         with torch.no_grad():

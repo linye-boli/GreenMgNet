@@ -343,30 +343,27 @@ class MultiLevelLayer1d(torch.nn.Module):
         super(MultiLevelLayer1d, self).__init__()
 
         self.nlevel = nlevel
-        if nlevel ==0:
-            self.diag = nn.Conv1d(width, width, 1)
-
+        self.diag = nn.Conv1d(width, width, 1)
+        
         if nlevel > 0:
             conv = nn.Conv1d(width, width, 3, padding=1)
             self.convs = nn.ModuleList([copy.deepcopy(conv) for _ in range(nlevel)])
 
-
-
     def forward(self, x):
         seq_len = x.size(-1)
+        w = self.diag(x)
 
         if self.nlevel == 0:
-            w = self.diag(x)
             return w
         elif self.nlevel > 0:
             for i, conv in enumerate(self.convs):
                 if i == 0:
-                    w = conv(x)
+                    w += conv(x)
                 else:
                     xH = x[...,::2**i]
                     yH = conv(xH)
                     yh = F.interpolate(yH, seq_len, mode='linear')
-                    w += yh
+                    w += yh 
             return w
         else:
             return torch.zeros_like(x).to(x)
