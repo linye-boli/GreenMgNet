@@ -45,6 +45,9 @@ if __name__ == '__main__':
     os.makedirs(log_root, exist_ok=True)
     model_out_path = os.path.join(log_root, model_nm + '.pth')
     csv_out_path = os.path.join(log_root, model_nm + '.csv')
+    if os.path.exists(csv_out_path):
+        print(f"{csv_out_path} file exists")
+        exit()
 
     ################################################################
     # load_dataset
