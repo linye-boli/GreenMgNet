@@ -69,8 +69,9 @@ def load_dataset_2d(cfg):
     if cfg.dataset_nm == 'darcy':
         tra_file_nm = 'piececonst_r421_N1024_smooth1.mat'
         test_file_nm = 'piececonst_r421_N1024_smooth2.mat'
-    elif cfg.dataset_nm == 'cosine':
-        file_nm = 'cosine_data.mat'
+    elif cfg.dataset_nm == 'invdist':
+        tra_file_nm = 'invdist_r421_train.mat'
+        test_file_nm = 'invdist_r421_test.mat'
     elif cfg.dataset_nm == 'lnabs':
         file_nm = 'lnabs_data.mat'
     elif cfg.dataset_nm == 'poisson':
