@@ -147,6 +147,34 @@ class LowRank1d(nn.Module):
         attn_out = torch.einsum('bhld,bhdc->blc', Q, attn_map)
 
         return attn_out / n
+    
+class LowRank2d(nn.Module):
+    def __init__(self, width, rank=1):
+        super(LowRank2d, self).__init__()
+        self.width = width
+        self.rank = rank
+
+        self.phi = DenseNet([3, 64, 128, 256, width*rank], torch.nn.ReLU)
+        self.psi = DenseNet([3, 64, 128, 256, width*rank], torch.nn.ReLU)
+
+    def forward(self, v, a):
+        # a (batch, nx, ny, 3)
+        # v (batch, nx, ny, f)
+        batch_size, nx, ny, cdim = v.shape
+        n = nx * ny
+
+        phi_eval = self.phi(a).reshape(batch_size, n, self.width, self.rank)
+        psi_eval = self.psi(a).reshape(batch_size, n, self.width, self.rank)
+
+        Q = rearrange(phi_eval, 'b l d h -> b h l d', d=self.width, h=self.rank)
+        K = rearrange(psi_eval, 'b l d h -> b h l d', d=self.width, h=self.rank)
+        V = rearrange(v, 'b x y d -> b 1 (x y) d', d=self.width)
+
+        attn_map = torch.einsum('bhmd,bhmc->bhdc', K, V)
+        attn_out = torch.einsum('bhld,bhdc->blc', Q, attn_map) / n 
+        attn_out = attn_out.reshape(batch_size, nx, ny, cdim)
+
+        return attn_out
 
 ################################################################
 # fourier transformer layer
@@ -193,6 +221,52 @@ class FourierAttention1d(nn.Module):
 
         return attn_out 
     
+
+class FourierAttention2d(nn.Module):
+    def __init__(self, in_channels, out_channels, nhead=5):
+        super(FourierAttention2d, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.nhead = nhead
+
+        self.Wq = nn.Linear(in_channels, out_channels*nhead)
+        self.Wk = nn.Linear(in_channels, out_channels*nhead)
+        self.Wv = nn.Linear(in_channels, out_channels*nhead)
+        self.oproj = nn.Linear(out_channels*nhead, out_channels)
+
+        self.LnQ = nn.ModuleList([copy.deepcopy(nn.LayerNorm(out_channels)) for _ in range(nhead)])
+        self.LnK = nn.ModuleList([copy.deepcopy(nn.LayerNorm(out_channels)) for _ in range(nhead)])
+
+    def forward(self, v):
+        # v (batch, n, f)
+        _, nx, ny, _ = v.shape
+        n = nx * ny
+        d = self.out_channels
+        h = self.nhead
+
+        Q = self.Wq(v)
+        K = self.Wk(v)
+        V = self.Wv(v)
+
+        Q = rearrange(Q, 'b x y (h d) -> b h (x y) d', d=d, h=h)
+        K = rearrange(K, 'b x y (h d) -> b h (x y) d', d=d, h=h)
+        V = rearrange(V, 'b x y (h d) -> b h (x y) d', d=d, h=h)
+        
+        Q = torch.stack([norm(x) for norm, x in zip(self.LnQ, (Q[:,i,...] for i in range(h)))], dim=1)
+        K = torch.stack([norm(x) for norm, x in zip(self.LnK, (K[:,i,...] for i in range(h)))], dim=1)
+
+        attn_map = torch.einsum('bhmd,bhnd->bhmn', Q, K)
+        attn_out = torch.einsum('bhmn,bhnd->bhmd', attn_map, V)
+        attn_out = rearrange(attn_out, 'b h l d -> b l (h d)')
+
+        attn_out = self.oproj(attn_out)
+        attn_out = attn_out / n
+
+        attn_out = rearrange(attn_out, 'b (x y) l -> b x y l', x=nx, y=ny)
+
+        return attn_out 
+
+
 ################################################################
 # galerkin Attention layer
 ################################################################
@@ -237,6 +311,49 @@ class GalerkinAttention1d(nn.Module):
 
         return attn_out 
 
+class GalerkinAttention2d(nn.Module):
+    def __init__(self, in_channels, out_channels, nhead=5):
+        super(GalerkinAttention2d, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.nhead = nhead
+
+        self.Wq = nn.Linear(in_channels, out_channels*nhead)
+        self.Wk = nn.Linear(in_channels, out_channels*nhead)
+        self.Wv = nn.Linear(in_channels, out_channels*nhead)
+        self.oproj = nn.Linear(out_channels*nhead, out_channels)
+
+        self.LnK = nn.ModuleList([copy.deepcopy(nn.LayerNorm(out_channels)) for _ in range(nhead)])
+        self.LnV = nn.ModuleList([copy.deepcopy(nn.LayerNorm(out_channels)) for _ in range(nhead)])
+
+    def forward(self, v):
+        # v (batch, n, f)
+        _, nx, ny, _ = v.shape
+        n = nx * ny
+        d = self.out_channels
+        h = self.nhead
+
+        Q = self.Wq(v)
+        K = self.Wk(v)
+        V = self.Wv(v)
+
+        Q = rearrange(Q, 'b x y (h d) -> b h (x y) d', d=d, h=h)
+        K = rearrange(K, 'b x y (h d) -> b h (x y) d', d=d, h=h)
+        V = rearrange(V, 'b x y (h d) -> b h (x y) d', d=d, h=h)
+
+        K = torch.stack([norm(x) for norm, x in zip(self.LnK, (K[:,i,...] for i in range(h)))], dim=1)
+        V = torch.stack([norm(x) for norm, x in zip(self.LnV, (V[:,i,...] for i in range(h)))], dim=1)
+        
+        attn_map = torch.einsum('bhmd,bhmc->bhdc', K, V)
+        attn_out = torch.einsum('bhld,bhdc->bhlc', Q, attn_map)
+        attn_out = rearrange(attn_out, 'b h l d -> b l (h d)')
+        attn_out = self.oproj(attn_out)
+        attn_out = attn_out / n
+
+        attn_out = rearrange(attn_out, 'b (x y) l -> b x y l', x=nx, y=ny)
+
+        return attn_out 
+
 
 
 if __name__ == '__main__':
@@ -260,7 +377,7 @@ if __name__ == '__main__':
 
     # Low Rank cfg
     rank = 4
-    lr_1d = LowRank1d(cin, cout, rank)
+    lr_1d = LowRank1d(cin, rank)
     u = lr_1d(v, a)
     print('------- lowrank -------')
     print('u : ', u.shape)
@@ -277,4 +394,33 @@ if __name__ == '__main__':
     gattn = GalerkinAttention1d(cin, cout, nhead)
     u = gattn(v)
     print('------- galerkin_attn -------')
+    print('u : ', u.shape)
+
+    # inputs :
+    bsz = 5 
+    seq_lx = 141
+    seq_ly = 141 
+    cin = 64
+    cout = 32
+    v = torch.rand((bsz, seq_lx, seq_ly, cin))
+    a = torch.rand((bsz, seq_lx, seq_ly, 3))
+    print('------ data 2d ------')
+    print('v : ', v.shape)
+    print('a : ', a.shape)
+
+    lr_2d = LowRank2d(cin, rank)
+    u = lr_2d(v, a)
+    print('------- lowrank -------')
+    print('u : ', u.shape)
+
+    nhead = 4
+    fattn = FourierAttention2d(cin, cout, nhead)
+    u = fattn(v)
+    print('------- fourier_attn -------')
+    print('u : ', u.shape)
+
+    nhead = 4
+    fattn = GalerkinAttention2d(cin, cout, nhead)
+    u = fattn(v)
+    print('------- fourier_attn -------')
     print('u : ', u.shape)
