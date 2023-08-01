@@ -1,6 +1,6 @@
-for ds in darcy
+for i in 0 1
 do
-    for i in 0 1
+    for ds in darcy invdist
     do
         for c in 1 2 3
         do 
