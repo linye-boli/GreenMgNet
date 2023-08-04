@@ -6,7 +6,7 @@ do
         do 
             for m in '-1' 0 1 2 3 4
             do
-                python fno/fourier_1d.py --dataset_nm $ds --trasub $s --testsub $s --clevel $c --mlevel $m --seed $2 --batch_size 16 --ntest 200 --device $1
+                python lno/lno_1d.py --dataset_nm $ds --trasub $s --testsub $s --clevel $c --mlevel $m --seed $2 --batch_size 16 --ntest 200 --device $1
             done
         done 
     done

@@ -72,10 +72,7 @@ def load_dataset_2d(cfg):
     elif cfg.dataset_nm == 'invdist':
         tra_file_nm = 'invdist_r421_train.mat'
         test_file_nm = 'invdist_r421_test.mat'
-    elif cfg.dataset_nm == 'lnabs':
-        file_nm = 'lnabs_data.mat'
-    elif cfg.dataset_nm == 'poisson':
-        file_nm = 'poisson_data.mat'
+
 
     tra_dataset_path = os.path.join(cfg.dataset_path, 'data2d', cfg.dataset_nm, tra_file_nm)
     tra_dataloader = MatReader(tra_dataset_path)

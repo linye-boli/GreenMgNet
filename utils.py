@@ -445,8 +445,6 @@ def get_arguments(parser):
                         help='Specifies learing rate for optimizer. (default: 1e-3)')
     parser.add_argument('--epochs', type=int, default=500, 
                         help='Number of training epochs. (default: 500)')
-    parser.add_argument('--log_dir', type=str, default='/workdir/MINO/logs', 
-                        help='Path to log, save checkpoints. ')
     parser.add_argument('--seed', type=int, default=0, 
                         help='random seed. (default: 0)')
     parser.add_argument('--save', type=int, default=0, 
@@ -460,8 +458,6 @@ def get_arguments(parser):
                         help='Size of each batch (default: 8)')
     parser.add_argument('--dataset_nm', type=str, default='burgers',
                         help='dataset name. (burgers, poisson, cosine, lnabs)')
-    parser.add_argument('--dataset_path', type=str, default='/workdir/pde_data/',
-                        help='Path to dataset.')
     parser.add_argument('--ntrain', type=int, default=1000,
                         help='How many sequences in the training dataset.')
     parser.add_argument('--ntest', type=int, default=200, 
@@ -474,8 +470,6 @@ def get_arguments(parser):
     
     # ====================================
     # for model
-    parser.add_argument('--cfg_path', type=str, default='/workdir/MINO/cfgs',
-                        help='Path to model cfg.')
     parser.add_argument('--clevel', type=int, default=0, 
                         help='coarsen level for kernel integral calculation')
     parser.add_argument('--mlevel', type=int, default=0,

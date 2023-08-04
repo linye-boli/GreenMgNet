@@ -22,9 +22,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Train a fourier neural operator 1d")
     args = get_arguments(parser)
-
-    with open(os.path.join(args.cfg_path, f'lno2d-cfg.yaml')) as f:
+    cfg_root = '/'.join(current_path.split('/')[:-1] + ['cfgs'])
+    with open(os.path.join(cfg_root, f'lno2d-cfg.yaml')) as f:
         model_cfg = EasyDict(yaml.full_load(f))
+    with open(os.path.join(cfg_root, f'data_log-cfg.yaml')) as f:
+        data_cfg = EasyDict(yaml.full_load(f))
+        vars(args)['dataset_path'] = data_cfg.dataset_path
     get_seed(args.seed, printout=True)
     torch.cuda.empty_cache()
     device = torch.device(f'cuda:{args.device}')
@@ -41,7 +44,7 @@ if __name__ == '__main__':
                f'-{tra_res}-{test_res}'+ \
                f'-cl{args.clevel}-ml{mlevel}' + \
                f'-seed{args.seed}'
-    log_root = os.path.join(args.log_dir, f'exp2d/lno2d/{args.dataset_nm}')
+    log_root = os.path.join(data_cfg.log_dir, f'exp2d/lno2d/{args.dataset_nm}')
     os.makedirs(log_root, exist_ok=True)
     model_out_path = os.path.join(log_root, model_nm + '.pth')
     csv_out_path = os.path.join(log_root, model_nm + '.csv')
