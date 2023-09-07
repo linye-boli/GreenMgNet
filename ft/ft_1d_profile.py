@@ -135,7 +135,7 @@ if __name__ == '__main__':
     # ---------------------------------------------------------
     # profile FLOPs and params
     model.eval()
-    with device:
+    with torch.device('cuda:{:}'.format(args.device)):
         flops, params = flopth(model, inputs=(a, x))
 
     print("model FLOPs : {:}".format(flops))
