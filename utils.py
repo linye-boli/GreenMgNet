@@ -518,3 +518,7 @@ def profile_gpumem(gpu_id):
 
     assert len(valid_proc) == 1
     return valid_proc[0]['used_memory']
+
+def cuda_empty_cache(gpu_id):
+    with torch.cuda.device('cuda:{:}'.format(gpu_id)):
+        torch.cuda.empty_cache()

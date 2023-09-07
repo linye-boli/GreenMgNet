@@ -32,8 +32,8 @@ if __name__ == '__main__':
         data_cfg = EasyDict(yaml.full_load(f))
         vars(args)['dataset_path'] = data_cfg.dataset_path
     get_seed(args.seed, printout=True)
-    torch.cuda.empty_cache()
     device = torch.device(f'cuda:{args.device}')
+    cuda_empty_cache(args.device)
 
     tra_res = 2**(13 - int(np.log2(args.trasub)))
     test_res = 2**(13 - int(np.log2(args.testsub)))
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     # ---------------------------------------------------------
     # profile training time 
     tra_batchtime = []
-    torch.cuda.empty_cache()
+    cuda_empty_cache(args.device)
     model.train()
     pbar = trange(nbatch+10+1) # 10 for warm up
     for ep in pbar:
@@ -112,7 +112,7 @@ if __name__ == '__main__':
     # ---------------------------------------------------------
     # profile inference time 
     infer_batchtime = []
-    torch.cuda.empty_cache()
+    cuda_empty_cache(args.device)
     model.eval()
     pbar = trange(nbatch+10+1)
     with torch.no_grad():
