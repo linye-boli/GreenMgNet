@@ -450,7 +450,7 @@ def get_arguments(parser):
     parser.add_argument('--save', type=int, default=0, 
                         help='save model. (default: 0)')
     parser.add_argument('--device', type=int, default=0,
-                        help='device id.')
+                        help='device id.')    
 
     # ===================================
     # for dataset
@@ -474,7 +474,7 @@ def get_arguments(parser):
                         help='coarsen level for kernel integral calculation')
     parser.add_argument('--mlevel', type=int, default=0,
                         help='multi-level for ml residual type. ')
-        
+            
     return parser.parse_args()
 
 def get_model_name(model_nm,
@@ -508,3 +508,13 @@ def get_model_name(model_nm,
     out_nm = '_'.join(out_nm)
 
     return out_nm
+
+import nvsmi 
+import json 
+def profile_gpumem(gpu_id):
+    gpu_proc = nvsmi.get_gpu_processes()
+    gpu_proc_json = [json.loads(proc.to_json()) for proc in gpu_proc]
+    valid_proc = [proc for proc in gpu_proc_json if int(proc['gpu_id']) == gpu_id]
+
+    assert len(valid_proc) == 1
+    return valid_proc[0]['used_memory']
