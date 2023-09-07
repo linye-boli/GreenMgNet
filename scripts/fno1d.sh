@@ -1,4 +1,4 @@
-for s in 16 8 4
+for s in 16 8 4 2 1
 do
     for ds in lnabs cosine burgers poisson
     do
