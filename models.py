@@ -36,8 +36,9 @@ class FNO1d(nn.Module):
 
         for i, (lc, kint) in enumerate(zip(self.local_corrections, self.kernel_integrals)):
 
-            # local correction
-            x1 = lc(x.permute(0, 2, 1)).permute(0, 2, 1)
+            if self.mlevel >= 0:
+                # local correction
+                x1 = lc(x.permute(0, 2, 1)).permute(0, 2, 1)
 
             # smooth kernel integral
             if self.clevel != 0:
@@ -47,7 +48,10 @@ class FNO1d(nn.Module):
                 x2 = kint(x)
             
             # nonlinear 
-            x = F.relu(x1 + x2)
+            if self.mlevel >= 0:
+                x = F.relu(x1 + x2)
+            else:
+                x = F.relu(x2)
 
         x = self.q(x)
         return x
@@ -82,9 +86,10 @@ class FNO2d(nn.Module):
         x = self.p(x)
 
         for i, (lc, kint) in enumerate(zip(self.local_corrections, self.kernel_integrals)):
-
-            # local correction
-            x1 = lc(x.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
+            
+            if self.mlevel >= 0:
+                # local correction
+                x1 = lc(x.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
 
             # smooth kernel integral
             if self.clevel != 0:
@@ -92,9 +97,13 @@ class FNO2d(nn.Module):
                 x2 = F.interpolate(x2.permute(0,3,1,2), (seq_lx, seq_ly), mode='bilinear').permute(0,2,3,1)
             else:
                 x2 = kint(x)
-            
-            # nonlinear 
-            x = F.relu(x1 + x2)
+
+            if self.mlevel >= 0:
+                # nonlinear 
+                x = F.relu(x1 + x2)
+            else:
+                x = F.relu(x2)
+
 
         x = self.q(x)
         return x
@@ -125,9 +134,10 @@ class LNO1d(nn.Module):
         x = self.p(x)
 
         for i, (lc, kint, ln) in enumerate(zip(self.local_corrections, self.kernel_integrals, self.layer_norms)):
-
-            # local correction
-            x1 = lc(x.permute(0, 2, 1)).permute(0, 2, 1)
+            
+            if self.mlevel >= 0:
+                # local correction
+                x1 = lc(x.permute(0, 2, 1)).permute(0, 2, 1)
 
             # smooth kernel integral
             if self.clevel != 0:
@@ -136,7 +146,11 @@ class LNO1d(nn.Module):
             else:
                 x2 = kint(x, a)
             
-            x = ln(x1+x2)
+            if self.mlevel >= 0:
+                x = ln(x1+x2)
+            else:
+                x = ln(x2)
+
             # nonlinear 
             if i != self.nblocks-1:
                 x = F.relu(x)
@@ -179,8 +193,9 @@ class LNO2d(nn.Module):
         for i, (lc, kint, ln) in enumerate(
             zip(self.local_corrections, self.kernel_integrals, self.layer_norms)):
 
-            # local correction
-            x1 = lc(x.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
+            if self.mlevel >= 0:
+                # local correction
+                x1 = lc(x.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
 
             # smooth kernel integral
             if self.clevel != 0:
@@ -188,8 +203,12 @@ class LNO2d(nn.Module):
                 x2 = F.interpolate(x2.permute(0,3,1,2), (seq_lx, seq_ly), mode='bilinear').permute(0,2,3,1)
             else:
                 x2 = kint(x, a)
-            
-            x = ln(x1+x2)
+
+            if self.mlevel >= 0:
+                x = ln(x1+x2)
+            else:
+                x = ln(x2)
+
             # nonlinear 
             if i != self.nblocks-1:
                 x = F.relu(x)
@@ -229,8 +248,9 @@ class FT1d(nn.Module):
         for i, (lc, kint, fnn, ln1, ln2) in enumerate(
             zip(self.local_corrections, self.kernel_integrals, self.fnns, self.layer_norms1, self.layer_norms2)):
 
-            # local correction
-            x1 = lc(x.permute(0, 2, 1)).permute(0, 2, 1)
+            if self.mlevel >= 0:
+                # local correction
+                x1 = lc(x.permute(0, 2, 1)).permute(0, 2, 1)
 
             # smooth kernel integral
             if self.clevel != 0:
@@ -239,7 +259,11 @@ class FT1d(nn.Module):
             else:
                 x2 = kint(x)
 
-            x = ln1(x1+x2) # f' = ln(f + attn(f))
+            if self.mlevel >= 0:
+                x = ln1(x1+x2) # f' = ln(f + attn(f))
+            else:
+                x = ln1(x2)
+            
             x = ln2(x+fnn(x)) # f = ln(f' + fnn(f'))
 
         x = self.q(x)
@@ -275,8 +299,9 @@ class FT2d(nn.Module):
         for i, (lc, kint, fnn, ln1, ln2) in enumerate(
             zip(self.local_corrections, self.kernel_integrals, self.fnns, self.layer_norms1, self.layer_norms2)):
 
-            # local correction
-            x1 = lc(x.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
+            if self.mlevel >= 0:
+                # local correction
+                x1 = lc(x.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
 
             # smooth kernel integral
             if self.clevel != 0:
@@ -285,7 +310,11 @@ class FT2d(nn.Module):
             else:
                 x2 = kint(x)
 
-            x = ln1(x1+x2) # f' = ln(f + attn(f))
+            if self.mlevel >= 0:
+                x = ln1(x1+x2) # f' = ln(f + attn(f))
+            else:
+                x = ln1(x2)
+            
             x = ln2(x+fnn(x)) # f = ln(f' + fnn(f'))
 
         x = self.q(x)
@@ -322,8 +351,9 @@ class GT1d(nn.Module):
         for i, (lc, kint, fnn, ln1, ln2) in enumerate(
             zip(self.local_corrections, self.kernel_integrals, self.fnns, self.layer_norms1, self.layer_norms2)):
 
-            # local correction
-            x1 = lc(x.permute(0, 2, 1)).permute(0, 2, 1)
+            if self.mlevel >= 0:
+                # local correction
+                x1 = lc(x.permute(0, 2, 1)).permute(0, 2, 1)
 
             # smooth kernel integral
             if self.clevel != 0:
@@ -332,7 +362,12 @@ class GT1d(nn.Module):
             else:
                 x2 = kint(x)
 
-            x = ln1(x1+x2) # f' = ln(f + attn(f))
+            if self.mlevel >= 0:
+                # local correction
+                x = ln1(x1+x2) # f' = ln(f + attn(f))
+            else:
+                x = ln1(x2)
+
             x = ln2(x+fnn(x)) # f = ln(f' + fnn(f'))
 
         x = self.q(x)
@@ -368,8 +403,9 @@ class GT2d(nn.Module):
         for i, (lc, kint, fnn, ln1, ln2) in enumerate(
             zip(self.local_corrections, self.kernel_integrals, self.fnns, self.layer_norms1, self.layer_norms2)):
 
-            # local correction
-            x1 = lc(x.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
+            if self.mlevel >= 0:
+                # local correction
+                x1 = lc(x.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
 
             # smooth kernel integral
             if self.clevel != 0:
@@ -378,7 +414,11 @@ class GT2d(nn.Module):
             else:
                 x2 = kint(x)
 
-            x = ln1(x1+x2) # f' = ln(f + attn(f))
+            if self.mlevel >= 0:
+                x = ln1(x1+x2) # f' = ln(f + attn(f))
+            else:
+                x = ln1(x2)
+                
             x = ln2(x+fnn(x)) # f = ln(f' + fnn(f'))
 
         x = self.q(x)
