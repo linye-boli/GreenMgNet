@@ -1,0 +1,1 @@
+{"bsz": 16, "tra_time": 0.0024528815344092435, "infer_time": 0.0006520325169549323, "tra_mem": 2020.0, "infer_mem": 1380.0, "model_FLOPs": "682.623M", "model_nparam": "378.561K"}

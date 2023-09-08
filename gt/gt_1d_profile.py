@@ -59,6 +59,7 @@ if __name__ == '__main__':
     # load_dataset
     ################################################################
     pprint.pprint(args, width=1)
+    train_loader, test_loader, u_normalizer = load_dataset_1d(args)
 
     ################################################################
     # init_model
@@ -75,75 +76,80 @@ if __name__ == '__main__':
     ################################################################
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    nbatch = args.epochs
-    myloss = LpLoss(size_average=False)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
 
-    a = torch.randn(args.batch_size, tra_res).to(device)
-    x = torch.randn(args.batch_size, tra_res).to(device)
-    u = torch.randn(args.batch_size, tra_res).to(device)
+    epochs = args.epochs
+    myloss = LpLoss(size_average=False)
 
     print(f'profile result out path : {prof_out_path}')
 
     # ---------------------------------------------------------
     # profile training time 
-    tra_batchtime = []
+    tra_epochtime = []
     cuda_empty_cache(args.device)
+    pbar = trange(epochs) # 10 for warm up
     model.train()
-    pbar = trange(nbatch+10+1) # 10 for warm up
     for ep in pbar:
         t1 = default_timer()
-        bsz, seq_len = a.shape
-        optimizer.zero_grad()
-
-        u_ = model(a=a,x=x).reshape(bsz, seq_len)
-        loss = myloss(u_.view(bsz,-1), u.view(bsz,-1))
-        loss.backward()
-        optimizer.step()
+        for a, x, u in train_loader:
+            bsz, seq_len = a.shape
+            a, x, u = a.to(device), x.to(device), u.to(device)
+            optimizer.zero_grad()
+            u_ = model(a=a,x=x).reshape(bsz, seq_len)
+            loss = myloss(u_.view(bsz,-1), u.view(bsz,-1))
+            loss.backward()
+            optimizer.step()
+        scheduler.step()
         t2 = default_timer()
-        tra_btime = t2 - t1
-        tra_batchtime.append(tra_btime)
-        if ep == nbatch+10:
+        tra_time = (t2 - t1) / len(train_loader.dataset)
+        if ep == (epochs - 1):
             tra_mem = profile_gpumem(args.device)
+        tra_epochtime.append(tra_time)
 
-    tra_bavgt = np.mean(tra_batchtime[10:-1])
-    print("train batch time : {:.5}s".format(tra_bavgt))
-    print("train batch mem : {:}MB".format(tra_mem))
     
+    tra_avg_epoch_time = np.mean(tra_epochtime[1:-1])
+    print("train epoch time : {:.5}s".format(tra_avg_epoch_time))
+    print("train mem : {:}MB".format(tra_mem))
+
     # ---------------------------------------------------------
     # profile inference time 
-    infer_batchtime = []
-    
+    infer_epochtime = []
+
     cuda_empty_cache(args.device)
+    pbar = trange(epochs) # 10 for warm up
     model.eval()
-    pbar = trange(nbatch+10+1)
     with torch.no_grad():
         for ep in pbar:
             t1 = default_timer()
-            bsz, seq_len = a.shape
-            u_ = model(a=a, x=x).reshape(bsz, seq_len)
+            for a, x, u in test_loader:
+                bsz, seq_len = a.shape
+                a, x = a.to(device), x.to(device)
+                u_ = model(a=a, x=x).reshape(bsz, seq_len)
             t2 = default_timer()
-            infer_btime = t2 - t1
-            infer_batchtime.append(infer_btime)
-            if ep == nbatch+10:
+            infer_time = (t2 - t1) / len(test_loader.dataset)
+            if ep == (epochs - 1):
                 infer_mem = profile_gpumem(args.device)
+            infer_epochtime.append(infer_time)
     
-    infer_bavgt = np.mean(infer_batchtime[10:-1])
-    print("infer batch time : {:.5}s".format(infer_bavgt))
-    print("infer batch time : {:}MB".format(infer_mem))
+
+    infer_avg_epoch_time = np.mean(infer_epochtime[1:-1])
+    print("infer epoch time : {:.5}s".format(infer_avg_epoch_time))
+    print("infer mem : {:}MB".format(infer_mem))
     
 
     # ---------------------------------------------------------
     # profile FLOPs and params
     model.eval()
-    flops, params = flopth(model, inputs=(a, x))
-
+    with torch.device('cuda:{:}'.format(args.device)):
+        flops, params = flopth(model, inputs=(a, x))
+    
     print("model FLOPs : {:}".format(flops))
     print("model #params : {:}".format(params))
 
     profile_dict = {
         'bsz' : args.batch_size,
-        'tra_time': tra_bavgt,
-        'infer_time': infer_bavgt,
+        'tra_time': tra_avg_epoch_time,
+        'infer_time': infer_avg_epoch_time,
         'tra_mem': tra_mem,
         'infer_mem': infer_mem,
         'model_FLOPs': flops, 
