@@ -1,4 +1,4 @@
-for s in 3 4 5
+for s in 1 2 3 4 5
 do
     for ds in darcy invdist
     do
