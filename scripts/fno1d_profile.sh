@@ -4,7 +4,7 @@ do
     do
         for c in 0 1 2 3 4
         do     
-            python fno/fourier_1d_profile.py --trasub $s --testsub $s --clevel $c --mlevel $m --seed $2 --batch_size 4 --ntest 200 --device $1 --epochs 1000
+            python fno/fourier_1d_profile.py --trasub $s --testsub $s --clevel $c --mlevel $m --seed $2 --batch_size 16 --ntest 200 --device $1 --epochs 5
         done
     done 
 done 
