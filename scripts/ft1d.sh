@@ -1,8 +1,8 @@
 for s in 16 8 4 2 1
 do
-    for ds in lnabs cosine burgers poisson
+    for c in 4 3 2 1 0
     do
-        for c in 1 2 3 4
+        for ds in burgers poisson lnabs cosine 
         do 
             for m in '-1' 0 1 2 3 4
             do
