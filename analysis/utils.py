@@ -25,6 +25,7 @@ def load_accuracy_log(log_paths):
 
         # mlevel = int(mlevel[2:]) if mlevel[2:] != 'x' else -1
         best_l2 = log.test_l2.min()
+
         log_df.loc[i] = [model_nm, dataset, clevel, trares, mlevel, seed, best_l2]
 
     return log_df 
