@@ -1,4 +1,5 @@
 /__pycache__
+/cfgs/data_log-cfg.yaml
 /cfgs/data_log-cfg_.yaml
 /scripts/test.sh
 /dataset
