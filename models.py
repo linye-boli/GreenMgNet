@@ -102,6 +102,7 @@ class FNO2d(nn.Module):
                 # nonlinear 
                 x = F.relu(x1 + x2)
             else:
+<<<<<<< Updated upstream
                 x = F.relu(x2)
 
 
@@ -213,6 +214,9 @@ class LNO2d(nn.Module):
             if i != self.nblocks-1:
                 x = F.relu(x)
 
+=======
+                x = x1 + x2
+>>>>>>> Stashed changes
 
         x = self.q(x)
         return x
