@@ -136,7 +136,7 @@ if __name__ == '__main__':
             if args.save:
                 torch.save(model, model_out_path)
         
-        if (ep > 20) & (test_l2_best > 0.8):
+        if (ep > 10) & (test_l2_best > 0.8):
             print('Fail to train : ep{:} - {:}'.format(ep, test_l2_best))
             exit()
         

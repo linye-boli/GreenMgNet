@@ -2,7 +2,7 @@ for s in 16 8 4 2 1
 do
     for c in 4 3 2 1 0
     do
-        for ds in burgers poisson lnabs cosine 
+        for ds in cosine lnabs burgers poisson 
         do 
             for m in '-1' 0 1 2 3 4
             do
