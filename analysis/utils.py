@@ -5,7 +5,7 @@ def load_accuracy_log(log_paths):
     log_df = pd.DataFrame(
         columns=(
         'model', 'dataset', 'coarse_level', 
-        'resolution', 'residual', 'seed', 'test_l2'))
+        'resolution', 'residual', 'seed', 'test_l2', 'mcode'))
 
     for i, log_path in tqdm(enumerate(log_paths), total=len(log_paths)):
         dataset, log_info = log_path.split('/')[-2:]
@@ -20,12 +20,16 @@ def load_accuracy_log(log_paths):
 
         if mlevel[2:] == 'x':
             mlevel = 'null'
+            mcode = -1
         elif mlevel[2:] == '0':
             mlevel = 'diag'
+            mcode = 0
+        else:
+            mcode = int(mlevel[2:])        
 
         # mlevel = int(mlevel[2:]) if mlevel[2:] != 'x' else -1
         best_l2 = log.test_l2.min()
-        # if best_l2 < 0.1:
-        log_df.loc[i] = [model_nm, dataset, clevel, trares, mlevel, seed, best_l2]
+        if best_l2 < 0.1:
+            log_df.loc[i] = [model_nm, dataset, clevel, trares, mlevel, seed, best_l2, mcode]
 
     return log_df 
