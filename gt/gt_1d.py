@@ -49,7 +49,7 @@ if __name__ == '__main__':
         print(f"{csv_out_path} file exists")
         exit()
 
-    get_seed(args.seed, printout=True)
+    # get_seed(args.seed, printout=True)
     torch.cuda.empty_cache()
     device = torch.device(f'cuda:{args.device}')
 
