@@ -49,7 +49,7 @@ if __name__ == '__main__':
         print(f"{csv_out_path} file exists")
         exit()
 
-    get_seed(args.seed, printout=True)
+    # get_seed(args.seed, printout=True)
     torch.cuda.empty_cache()
     device = torch.device(f'cuda:{args.device}')
 
@@ -136,10 +136,12 @@ if __name__ == '__main__':
             if args.save:
                 torch.save(model, model_out_path)
         
-        if (ep > 20) & (test_l2_best > 0.8):
+        if (ep > 30) & (test_l2_best > 0.8):
             print('Fail to train : ep{:} - {:}'.format(ep, test_l2_best))
             exit()
         
-    log_df = pd.DataFrame({'train_l2': train_log, 'test_l2': test_log})
-    log_df.to_csv(csv_out_path, index=False)
-
+    if test_l2_best < 0.1:
+        log_df = pd.DataFrame({'train_l2': train_log, 'test_l2': test_log})
+        log_df.to_csv(csv_out_path, index=False)
+    else:
+        print('Fail to train : ep{:} - {:}'.format(ep, test_l2_best))
