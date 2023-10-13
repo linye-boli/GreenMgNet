@@ -1,6 +1,6 @@
 for s in 16 8 4 2 1
 do
-    for ds in cosine lnabs burgers poisson
+    for ds in cosine lnabs burgers
     do
         for c in 0 1 2 3 4
         do 
