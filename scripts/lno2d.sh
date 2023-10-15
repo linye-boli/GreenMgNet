@@ -1,8 +1,8 @@
-for s in 1 2 5 4 3
+for s in 1 2 3 4 5
 do
     for ds in darcy invdist
     do
-        for c in 2 3 4
+        for c in 0 1 2 3 4
         do 
             for m in '-1' 0 1 2 3 4
             do
