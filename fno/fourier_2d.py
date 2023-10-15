@@ -137,6 +137,14 @@ if __name__ == '__main__':
             test_l2_best = test_l2
             if args.save:
                 torch.save(model, model_out_path)
+
+        if ep > 1:
+            elapsed = pbar.format_dict["elapsed"]
+            rate = pbar.format_dict["rate"]
+            remaining = (pbar.total - pbar.n) / rate if rate and pbar.total else 0
+            if remaining / 3600 > 3:
+                print('too long for training')
+                exit()
         
     log_df = pd.DataFrame({'train_l2': train_log, 'test_l2': test_log})
     log_df.to_csv(csv_out_path, index=False)
