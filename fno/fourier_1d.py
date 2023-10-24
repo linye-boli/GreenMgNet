@@ -153,7 +153,7 @@ if __name__ == '__main__':
                 exit()
 
     
-    if test_l2_best < 0.1:
+    if (test_l2_best < 0.1) | ((tra_res==512) & (test_l2_best < 0.2)):
         log_df = pd.DataFrame({'train_l2': train_log, 'test_l2': test_log})
         log_df.to_csv(csv_out_path, index=False)
     else:
