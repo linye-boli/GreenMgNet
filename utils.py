@@ -551,8 +551,6 @@ def pass_check(model_nm, res, clevel, mlevel, out_nm):
                 return True
             else:
                 return False
-
-
     elif model_nm == 'gt2d':
         if res in [85, 141]:
             return False
@@ -567,5 +565,5 @@ def pass_check(model_nm, res, clevel, mlevel, out_nm):
                 return False
         else:
             return False
-    else:
+    elif model_nm == 'lno2d':
         return False 

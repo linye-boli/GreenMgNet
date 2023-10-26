@@ -52,6 +52,10 @@ if __name__ == '__main__':
         print(f"{csv_out_path} file exists")
         exit()
 
+    ispass = pass_check('lno2d', tra_res, args.clevel, mlevel, model_nm)
+    if ispass:
+        exit()
+
     ################################################################
     # load_dataset
     ################################################################
@@ -135,13 +139,13 @@ if __name__ == '__main__':
             if args.save:
                 torch.save(model, model_out_path)
         
-        if ep > 1:
-            elapsed = pbar.format_dict["elapsed"]
-            rate = pbar.format_dict["rate"]
-            remaining = (pbar.total - pbar.n) / rate if rate and pbar.total else 0
-            if remaining / 3600 > 3:
-                print('too long for training')
-                exit()
+        # if ep > 1:
+        #     elapsed = pbar.format_dict["elapsed"]
+        #     rate = pbar.format_dict["rate"]
+        #     remaining = (pbar.total - pbar.n) / rate if rate and pbar.total else 0
+        #     if remaining / 3600 > 3:
+        #         print('too long for training')
+        #         exit()
         
     log_df = pd.DataFrame({'train_l2': train_log, 'test_l2': test_log})
     log_df.to_csv(csv_out_path, index=False)
