@@ -28,7 +28,7 @@ if __name__ == '__main__':
     with open(os.path.join(cfg_root, f'data_log-cfg.yaml')) as f:
         data_cfg = EasyDict(yaml.full_load(f))
         vars(args)['dataset_path'] = data_cfg.dataset_path
-    get_seed(args.seed, printout=True)
+    # get_seed(args.seed, printout=True)
     torch.cuda.empty_cache()
     device = torch.device(f'cuda:{args.device}')
 
@@ -50,6 +50,10 @@ if __name__ == '__main__':
     csv_out_path = os.path.join(log_root, model_nm + '.csv')
     if os.path.exists(csv_out_path):
         print(f"{csv_out_path} file exists")
+        exit()
+
+    ispass = pass_check('gt2d', tra_res, args.clevel, mlevel, model_nm)
+    if ispass:
         exit()
 
 
