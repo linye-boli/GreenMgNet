@@ -566,12 +566,9 @@ def pass_check(model_nm, res, clevel, mlevel, out_nm):
         else:
             return False
     elif model_nm == 'lno2d':
-        if res == 85:
+        if res in [85, 141]:
             return False 
-        elif res == 141:
-            if clevel in ['x', 0, 1]:
-                print('{:} : out of A100 mem'.format(out_nm))
-                return True
-            else:
-                return False
-        return False 
+        elif res == 211:
+            return False
+        else:
+            return True
