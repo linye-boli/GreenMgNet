@@ -28,7 +28,7 @@ if __name__ == '__main__':
     with open(os.path.join(cfg_root, f'data_log-cfg.yaml')) as f:
         data_cfg = EasyDict(yaml.full_load(f))
         vars(args)['dataset_path'] = data_cfg.dataset_path
-    get_seed(args.seed, printout=True)
+    # get_seed(args.seed, printout=True)
     torch.cuda.empty_cache()
     device = torch.device(f'cuda:{args.device}')
 
@@ -54,7 +54,6 @@ if __name__ == '__main__':
     
     ispass = pass_check('ft2d', tra_res, args.clevel, mlevel)
     if ispass:
-        print('too long for training')
         exit()
 
 
