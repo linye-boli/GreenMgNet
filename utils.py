@@ -542,3 +542,33 @@ def pass_check(model_nm, res, clevel, mlevel, out_nm):
                 return True
             else:
                 return False
+<<<<<<< HEAD
+=======
+        else:
+            if clevel == 0:
+                print('{:} : out of A100 mem'.format(out_nm))
+                return True
+            elif clevel == 1:
+                print('{:} : too long for training'.format(out_nm))
+                return True
+            else:
+                return False
+
+
+    elif model_nm == 'gt2d':
+        if res in [85, 141]:
+            return False
+        elif res == 211:
+            if clevel == 0:
+                if mlevel in ['x', 0, 1]:
+                    return False 
+                else:
+                    print('{:} : too long for training'.format(out_nm))
+                    return True
+            else:
+                return False
+        else:
+            return False
+    else:
+        return False 
+>>>>>>> 2abe184fae9c9ed7f37e0b2cfcbecb77f2caaeea
