@@ -525,6 +525,13 @@ def cuda_empty_cache(gpu_id):
 
 def pass_check(model_nm, res, clevel, mlevel, out_nm):
     if model_nm == 'ft2d':
+        if res == 85:
+            return False 
+        
+        if res == 141:
+            if clevel == 0:
+                return False
+
         if res == 211:
             if clevel == 0:
                 print('{:} : out of A100 mem'.format(out_nm))
