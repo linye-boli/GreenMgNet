@@ -1,6 +1,6 @@
 for ds in darcy invdist
 do
-    for s in 5 3 2
+    for s in 5 3 2 1
     do
         for c in 3 2 1 0
         do
