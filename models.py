@@ -3,12 +3,66 @@ import numpy as np
 import torch 
 import torch.nn as nn 
 import torch.nn.functional as F
+from einops import rearrange, repeat
 from layers import (
+    SmoothKernel1d,
     SpectralConv1d, SpectralConv2d,
     LowRank1d, LowRank2d,
     FourierAttention1d, FourierAttention2d,
     GalerkinAttention1d, GalerkinAttention2d)
 from utils import DenseNet, MultiLevelLayer1d, MultiLevelLayer2d
+
+class ML1d(nn.Module):
+    def __init__(self, modes, width, clevel=0, mlevel=0, nblocks=4):
+        super(ML1d, self).__init__()
+
+        self.modes1 = modes
+        self.width = width
+        self.clevel = clevel 
+        self.mlevel = mlevel
+        self.nblocks = nblocks
+
+        self.p = nn.Linear(2, self.width) # input channel_dim is 2: (u0(x), x)
+        self.q = DenseNet([self.width, self.width*2, 1], nn.ReLU)  # output channel_dim is 1: u1(x)
+        kernel_integral = SmoothKernel1d(self.width, self.modes1)
+
+        local_correction = MultiLevelLayer1d(self.width, mlevel)
+
+        self.local_corrections = nn.ModuleList([copy.deepcopy(local_correction) for _ in range(nblocks)])
+        self.kernel_integrals = nn.ModuleList([copy.deepcopy(kernel_integral) for _ in range(nblocks)])
+
+    def forward(self, x, a):
+        seq_len = x.shape[1]
+        x = rearrange(x, "b l -> b 1 l")
+
+        # x = torch.stack([a, x],dim=-1)
+        # x = self.p(x)
+
+        for i, (lc, kint) in enumerate(zip(self.local_corrections, self.kernel_integrals)):
+
+            if self.mlevel >= 0:
+                # local correction
+                x1 = lc(x.permute(0, 2, 1)).permute(0, 2, 1)
+
+            # smooth kernel integral
+            if self.clevel != 0:
+                x2 = kint(x[:,::2**self.clevel])
+                x2 = F.interpolate(x2.permute(0,2,1), seq_len, mode='linear').permute(0,2,1)
+            else:
+                x2 = kint(x)
+
+            if self.mlevel >= 0:
+                x = x1 + x2
+            else:
+                x = x2
+            # # nonlinear 
+            # if self.mlevel >= 0:
+            #     x = F.relu(x1 + x2)
+            # else:
+            #     x = F.relu(x2)
+
+        # x = self.q(x)
+        return x
 
 class FNO1d(nn.Module):
     def __init__(self, modes, width, clevel=0, mlevel=0, nblocks=4):

@@ -140,7 +140,15 @@ if __name__ == '__main__':
             print('Fail to train : ep{:} - {:}'.format(ep, test_l2_best))
             exit()
         
-    if test_l2_best < 0.1:
+        if ep > 1:
+            elapsed = pbar.format_dict["elapsed"]
+            rate = pbar.format_dict["rate"]
+            remaining = (pbar.total - pbar.n) / rate if rate and pbar.total else 0
+            if remaining / 3600 > 3:
+                print('too long for training')
+                exit()
+        
+    if (test_l2_best < 0.1) | ((tra_res==512) & (test_l2_best < 0.2)):
         log_df = pd.DataFrame({'train_l2': train_log, 'test_l2': test_log})
         log_df.to_csv(csv_out_path, index=False)
     else:

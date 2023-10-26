@@ -1,8 +1,42 @@
 import copy 
 import torch 
 import torch.nn as nn 
-from einops import rearrange
+from einops import rearrange, repeat
 from utils import DenseNet
+import torch.nn.functional as F
+
+
+################################################################
+#  1d smooth kernel layer
+################################################################
+class SmoothKernel1d(nn.Module):
+    def __init__(self, channels, modes):
+        super(SmoothKernel1d, self).__init__()
+        """
+        1D Smooth Kernel layer.
+        """
+        self.channels = channels
+        self.modes = modes  #Number of Fourier modes to multiply, at most floor(N/2) + 1
+
+        self.scale = (1 / (modes*modes))
+
+        # x = torch.linspace(0,1,modes)
+        # y = torch.linspace(0,1,modes)
+        # X, Y = torch.meshgrid(x, y)
+        # init_sk = torch.cos(X - Y)
+        # init_sk = repeat(init_sk, 'm n -> c m n', c=channels)
+
+        # self.sk = nn.Parameter(init_sk + self.scale * torch.rand(channels, self.modes, self.modes, dtype=torch.float32))
+        self.sk = nn.Parameter(self.scale * torch.rand(channels, self.modes, self.modes, dtype=torch.float32))
+
+    def forward(self, w):
+        seq_len = w.shape[1]
+        x_c = F.interpolate(w.permute(0,2,1), self.modes, mode='linear')
+        w_c = torch.einsum("bcm, cnm-> bcn", x_c, self.sk)
+        w = F.interpolate(w_c, seq_len, mode='linear') / (self.modes ** 2)
+        w = w.permute(0,2,1)
+        return w
+
 
 ################################################################
 #  1d fourier layer
@@ -81,8 +115,6 @@ class SpectralConv2d(nn.Module):
         return x
 
 
-
-
 class SpectralConvLite1d(nn.Module):
     def __init__(self, channels, modes):
         super(SpectralConvLite1d, self).__init__()
@@ -114,9 +146,6 @@ class SpectralConvLite1d(nn.Module):
         x = torch.fft.irfft(out_ft, n=x.size(-1))
         x = x.permute(0,2,1)
         return x
-
-
-
 
 ################################################################
 # lowrank layer
@@ -221,7 +250,6 @@ class FourierAttention1d(nn.Module):
 
         return attn_out 
     
-
 class FourierAttention2d(nn.Module):
     def __init__(self, in_channels, out_channels, nhead=5):
         super(FourierAttention2d, self).__init__()
@@ -354,19 +382,27 @@ class GalerkinAttention2d(nn.Module):
 
         return attn_out 
 
-
-
 if __name__ == '__main__':
 
     # inputs :
     bsz = 5 
-    seq_len = 64 
-    cin = 64
+    seq_len = 128 
+    cin = 32
     cout = 32
     v = torch.rand((bsz, seq_len, cin))
     a = torch.rand((bsz, seq_len, 2))
     print('v : ', v.shape)
     print('a : ', a.shape)
+
+    # smooth_kernel cfg:
+    modes = 16
+    sk1d = SmoothKernel1d(cin, modes)
+    u = sk1d(v)
+    print('------- smooth kernel -------')
+    print('u : ', u.shape)
+
+    import pdb 
+    pdb.set_trace()
 
     # spec_conv cfg:
     modes = 16
