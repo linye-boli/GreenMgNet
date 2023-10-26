@@ -51,6 +51,23 @@ if __name__ == '__main__':
     if os.path.exists(csv_out_path):
         print(f"{csv_out_path} file exists")
         exit()
+    
+    pass_list = [
+        (211, 0, -1),
+        (211, 0, 0),
+        (211, 0, 1),
+        (211, 0, 2),
+        (211, 0, 3),
+        (211, 1, 1),
+        (211, 1, 2),
+        (211, 1, 3),
+    ]
+
+    if (tra_res, args.clevel, int(mlevel)) in pass_list:
+        print('too long for training')
+        exit()
+
+
 
     ################################################################
     # load_dataset
@@ -135,14 +152,14 @@ if __name__ == '__main__':
             if args.save:
                 torch.save(model, model_out_path)
         
-        if ep > 1:
-            elapsed = pbar.format_dict["elapsed"]
-            rate = pbar.format_dict["rate"]
-            remaining = (pbar.total - pbar.n) / rate if rate and pbar.total else 0
+        # if ep > 1:
+        #     elapsed = pbar.format_dict["elapsed"]
+        #     rate = pbar.format_dict["rate"]
+        #     remaining = (pbar.total - pbar.n) / rate if rate and pbar.total else 0
 
-            if remaining / 3600 > 3:
-                print('too long for training')
-                exit()
+        #     if remaining / 3600 > 3:
+        #         print('too long for training')
+        #         exit()
 
     log_df = pd.DataFrame({'train_l2': train_log, 'test_l2': test_log})
     log_df.to_csv(csv_out_path, index=False)
