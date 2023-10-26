@@ -538,11 +538,8 @@ def pass_check(model_nm, res, clevel, mlevel, out_nm):
                 print('{:} : out of A100 mem'.format(out_nm))
                 return True
             elif clevel == 1:
-                if mlevel in ['x', 0]:
-                    return False 
-                else:
-                    print('{:} : too long for training'.format(out_nm))
-                    return True
+                print('{:} : too long for training'.format(out_nm))
+                return True
             else:
                 return False
                 
