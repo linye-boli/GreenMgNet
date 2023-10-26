@@ -527,20 +527,22 @@ def pass_check(model_nm, res, clevel, mlevel, out_nm):
     if model_nm == 'ft2d':
         if res == 85:
             return False 
-        
-        if res == 141:
+        elif res == 141:
             if clevel == 0:
                 print('{:} : out of A100 mem'.format(out_nm))
                 return True
-
-        if res == 211:
+            else:
+                return False
+        elif res == 211:
             if clevel == 0:
                 print('{:} : out of A100 mem'.format(out_nm))
                 return True
-            if clevel == 1:
-                if mlevel in ['x', 1]:
+            elif clevel == 1:
+                if mlevel in ['x', 0]:
                     return False 
                 else:
                     print('{:} : too long for training'.format(out_nm))
                     return True
+            else:
+                return False
                 
