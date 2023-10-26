@@ -52,18 +52,8 @@ if __name__ == '__main__':
         print(f"{csv_out_path} file exists")
         exit()
     
-    pass_list = [
-        (211, 0, 'x'),
-        (211, 0, 0),
-        (211, 0, 1),
-        (211, 0, 2),
-        (211, 0, 3),
-        (211, 1, 1),
-        (211, 1, 2),
-        (211, 1, 3),
-    ]
-
-    if (tra_res, args.clevel, int(mlevel)) in pass_list:
+    ispass = pass_check('ft2d', tra_res, args.clevel, mlevel)
+    if ispass:
         print('too long for training')
         exit()
 
