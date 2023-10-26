@@ -583,4 +583,3 @@ def pass_check(model_nm, res, clevel, mlevel, out_nm):
             return True
     elif model_nm == 'fno2d':
         return False
-
