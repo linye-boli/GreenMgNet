@@ -28,7 +28,7 @@ if __name__ == '__main__':
     with open(os.path.join(cfg_root, f'data_log-cfg.yaml')) as f:
         data_cfg = EasyDict(yaml.full_load(f))
         vars(args)['dataset_path'] = data_cfg.dataset_path
-    get_seed(args.seed, printout=True)
+    # get_seed(args.seed, printout=True)
     torch.cuda.empty_cache()
     device = torch.device(f'cuda:{args.device}')
 
@@ -50,6 +50,10 @@ if __name__ == '__main__':
     csv_out_path = os.path.join(log_root, model_nm + '.csv')
     if os.path.exists(csv_out_path):
         print(f"{csv_out_path} file exists")
+        exit()
+
+    ispass = pass_check('gt2d', tra_res, args.clevel, mlevel, model_nm)
+    if ispass:
         exit()
 
 
@@ -136,13 +140,13 @@ if __name__ == '__main__':
             if args.save:
                 torch.save(model, model_out_path)
         
-        if ep > 1:
-            elapsed = pbar.format_dict["elapsed"]
-            rate = pbar.format_dict["rate"]
-            remaining = (pbar.total - pbar.n) / rate if rate and pbar.total else 0
-            if remaining / 3600 > 3:
-                print('too long for training')
-                exit()
+        # if ep > 1:
+        #     elapsed = pbar.format_dict["elapsed"]
+        #     rate = pbar.format_dict["rate"]
+        #     remaining = (pbar.total - pbar.n) / rate if rate and pbar.total else 0
+        #     if remaining / 3600 > 3:
+        #         print('too long for training')
+        #         exit()
         
     log_df = pd.DataFrame({'train_l2': train_log, 'test_l2': test_log})
     log_df.to_csv(csv_out_path, index=False)
