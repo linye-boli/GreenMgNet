@@ -572,7 +572,7 @@ def pass_check(model_nm, res, clevel, mlevel, out_nm):
             return False 
         elif res == 211:
             if clevel == 0:
-                if mlevel in ['x', 0, 1]:
+                if mlevel in ['x', 0, 1, 2]:
                     return False 
                 else:
                     print('{:} : too long for training'.format(out_nm))
