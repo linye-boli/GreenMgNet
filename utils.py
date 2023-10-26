@@ -542,8 +542,6 @@ def pass_check(model_nm, res, clevel, mlevel, out_nm):
                 return True
             else:
                 return False
-<<<<<<< HEAD
-=======
         else:
             if clevel == 0:
                 print('{:} : out of A100 mem'.format(out_nm))
@@ -553,8 +551,6 @@ def pass_check(model_nm, res, clevel, mlevel, out_nm):
                 return True
             else:
                 return False
-
-
     elif model_nm == 'gt2d':
         if res in [85, 141]:
             return False
@@ -571,4 +567,3 @@ def pass_check(model_nm, res, clevel, mlevel, out_nm):
             return False
     else:
         return False 
->>>>>>> 2abe184fae9c9ed7f37e0b2cfcbecb77f2caaeea
