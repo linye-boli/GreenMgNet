@@ -523,16 +523,16 @@ def cuda_empty_cache(gpu_id):
     with torch.cuda.device('cuda:{:}'.format(gpu_id)):
         torch.cuda.empty_cache()
 
-def pass_check(model_nm, res, clevel, mlevel):
+def pass_check(model_nm, res, clevel, mlevel, out_nm):
     if model_nm == 'ft2d':
         if res == 211:
             if clevel == 0:
-                print('out of A100 mem')
+                print('{:} : out of A100 mem'.format(out_nm))
                 return True
             if clevel == 1:
                 if mlevel in ['x', 1]:
                     return False 
                 else:
+                    print('{:} : too long for training'.format(out_nm))
                     return True
-                
                 

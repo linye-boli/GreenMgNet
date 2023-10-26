@@ -52,7 +52,7 @@ if __name__ == '__main__':
         print(f"{csv_out_path} file exists")
         exit()
     
-    ispass = pass_check('ft2d', tra_res, args.clevel, mlevel)
+    ispass = pass_check('ft2d', tra_res, args.clevel, mlevel, model_nm)
     if ispass:
         exit()
 
