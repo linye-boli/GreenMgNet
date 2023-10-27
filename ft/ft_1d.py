@@ -132,7 +132,7 @@ if __name__ == '__main__':
 
         if test_l2 < test_l2_best:
             test_l2_best = test_l2
-            if args.save:
+            if args.seed == 100:
                 torch.save(model, model_out_path)
         
         if (ep > 10) & (test_l2_best > 0.8):

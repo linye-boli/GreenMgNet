@@ -133,7 +133,7 @@ if __name__ == '__main__':
 
         if test_l2 < test_l2_best:
             test_l2_best = test_l2
-            if args.save:
+            if args.seed == 100:
                 torch.save(model, model_out_path)
         
         if (ep > 30) & (test_l2_best > 0.8):
@@ -148,7 +148,7 @@ if __name__ == '__main__':
                 print('too long for training')
                 exit()
         
-    if (test_l2_best < 0.1) | ((tra_res==512) & (test_l2_best < 0.2)):
+    if (test_l2_best < 0.1) | ((tra_res==1024) & (test_l2_best < 0.2)):
         log_df = pd.DataFrame({'train_l2': train_log, 'test_l2': test_log})
         log_df.to_csv(csv_out_path, index=False)
     else:
