@@ -3,3 +3,4 @@
 /cfgs/data_log-cfg_.yaml/scripts/test.sh
 /dataset
 /scripts/test.sh
+/logs/*/*/*/*.pth
