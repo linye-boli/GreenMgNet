@@ -592,6 +592,19 @@ def pass_check(model_nm, res, clevel, mlevel, out_nm):
             else:
                 return False 
         else:
-            return True
+            if clevel in [0, 1]:
+                if mlevel in ['x', 0, 1]:
+                    return False 
+                else:
+                    print('{:} : too long for training'.format(out_nm))
+                    return True
+            elif clevel == 2:
+                if mlevel in ['x', 0, 1, 2]:
+                    return False 
+                else:
+                    print('{:} : too long for training'.format(out_nm))
+                    return True
+            else:
+                return False
     elif model_nm == 'fno2d':
         return False
