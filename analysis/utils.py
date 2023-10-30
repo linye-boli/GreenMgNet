@@ -169,16 +169,16 @@ def vis_all_model_dataset_residual_trend_on_fix_resolution(df, resolution=4096, 
     return fig 
 
 def vis_all_model_dataset2d_residual_trend_on_fix_resolution(df, resolution=141, colors=['r','b','c','m']):
-    sub_df = df[df.resolution == resolution]
+    sub_df = df[(df.resolution == resolution) & (df.residual.isin(['null', 'diag', 'ml1', 'ml2', 'ml3']))]
     table_mean = sub_df.pivot_table(values='test_l2', index=['dataset', 'model'], columns=['residual'], aggfunc=np.mean)
     table_min = sub_df.pivot_table(values='test_l2', index=['dataset', 'model'], columns=['residual'], aggfunc=np.min)
     table_max = sub_df.pivot_table(values='test_l2', index=['dataset', 'model'], columns=['residual'], aggfunc=np.max)
 
-    fig, axs = plt.subplots(3, 4, figsize=(15, 5))
-    residuals = ['null', 'diag', 'ml1', 'ml2', 'ml3', 'ml4'] #---------------
+    fig, axs = plt.subplots(2, 3, figsize=(15, 5))
+    residuals = ['null', 'diag', 'ml1', 'ml2', 'ml3'] 
     x = np.arange(len(residuals))
     for d, dataset in enumerate(['darcy', 'invdist']):
-        for m, model in enumerate(['fno1d', 'lno1d', 'gt1d']):
+        for m, model in enumerate(['fno2d', 'lno2d', 'gt2d']):
             
             l2max = []
             l2min = []
