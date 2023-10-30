@@ -167,3 +167,99 @@ def vis_all_model_dataset_residual_trend_on_fix_resolution(df, resolution=4096, 
     fig.tight_layout()
 
     return fig 
+
+def vis_all_model_dataset2d_residual_trend_on_fix_resolution(df, resolution=141, colors=['r','b','c','m']):
+    sub_df = df[df.resolution == resolution]
+    table_mean = sub_df.pivot_table(values='test_l2', index=['dataset', 'model'], columns=['residual'], aggfunc=np.mean)
+    table_min = sub_df.pivot_table(values='test_l2', index=['dataset', 'model'], columns=['residual'], aggfunc=np.min)
+    table_max = sub_df.pivot_table(values='test_l2', index=['dataset', 'model'], columns=['residual'], aggfunc=np.max)
+
+    fig, axs = plt.subplots(3, 4, figsize=(15, 5))
+    residuals = ['null', 'diag', 'ml1', 'ml2', 'ml3', 'ml4'] #---------------
+    x = np.arange(len(residuals))
+    for d, dataset in enumerate(['darcy', 'invdist']):
+        for m, model in enumerate(['fno1d', 'lno1d', 'gt1d']):
+            
+            l2max = []
+            l2min = []
+            l2mean = []
+
+            for i, residual in enumerate(residuals):
+                l2mean.append(table_mean.loc[(dataset, model), residual])
+                l2min.append(table_min.loc[(dataset, model), residual])
+                l2max.append(table_max.loc[(dataset, model), residual])
+
+            axs[d][m].plot(x, l2mean, "-", color=colors[m])
+            axs[d][m].plot(x, l2min, ":", color=colors[m])
+            axs[d][m].plot(x, l2max, ":", color=colors[m])
+            axs[d][m].fill_between(x, l2min, l2max, color=colors[m], alpha=0.1)
+            
+            axs[d][m].set_yscale('log')
+            axs[d][m].grid(axis='both', which='both')
+            axs[d][m].set_title("{:}-{:}".format(model, dataset))
+            axs[d][m].set_xticks(x)
+            axs[d][m].set_xticklabels(residuals)
+    fig.tight_layout()
+
+    return fig 
+
+
+def pass_check(model_nm, res, clevel, mlevel, out_nm):
+    if model_nm == 'ft2d':
+        if res == 85:
+            return False 
+        elif res == 141:
+            if clevel == 0:
+                print('{:} : out of A100 mem'.format(out_nm))
+                return True
+            else:
+                return False
+        elif res == 211:
+            if clevel == 0:
+                print('{:} : out of A100 mem'.format(out_nm))
+                return True
+            elif clevel == 1:
+                print('{:} : too long for training'.format(out_nm)) # 13 hours on A100
+                return True
+            else:
+                return False
+        else:
+            if clevel == 0:
+                print('{:} : out of A100 mem'.format(out_nm))
+                return True
+            elif clevel == 1:
+                print('{:} : too long for training'.format(out_nm))
+                return True
+            else:
+                
+                return False
+    elif model_nm == 'gt2d':
+        if res in [85, 141]:
+            return False
+        elif res == 211:
+            if clevel == 0:
+                if mlevel in ['null', 'diag', 'ml1']:
+                    return False 
+                else:
+                    print('{:} : too long for training'.format(out_nm))
+                    return True
+            else:
+                return False
+        else:
+            return False
+    elif model_nm == 'lno2d':
+        if res in [85, 141]:
+            return False 
+        elif res == 211:
+            if clevel == 0:
+                if mlevel in ['null', 'diag', 'ml1', 'ml2']:
+                    return False 
+                else:
+                    print('{:} : too long for training'.format(out_nm))
+                    return True 
+            else:
+                return False 
+        else:
+            return True
+    elif model_nm == 'fno2d':
+        return False
