@@ -29,7 +29,7 @@ if __name__ == '__main__':
         data_cfg = EasyDict(yaml.full_load(f))
         vars(args)['dataset_path'] = data_cfg.dataset_path
 
-    get_seed(args.seed, printout=True)
+    # get_seed(args.seed, printout=True)
 
     torch.cuda.empty_cache()
     device = torch.device(f'cuda:{args.device}')
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     ################################################################
     # load_dataset
     ################################################################
-    pprint.pprint(args, width=1)
+    # pprint.pprint(args, width=1)
     train_loader, test_loader, u_normalizer = load_dataset_1d(args)
 
     ################################################################
