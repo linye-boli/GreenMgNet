@@ -602,7 +602,7 @@ def pass_check(model_nm, res, clevel, mlevel, out_nm):
     elif model_nm == 'fno2d':
         if res == 85:
             if clevel == 3:
-                print('dimension problem ')
+                print('{:} : dimension problem'.format(out_nm))
                 return True
             else:
                 return False
