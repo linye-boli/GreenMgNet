@@ -543,11 +543,7 @@ def pass_check(model_nm, res, clevel, mlevel, out_nm):
             if clevel == 0:
                 print('{:} : out of A100 mem'.format(out_nm))
                 return True
-            elif clevel == 1:
-                print('{:} : too long for training'.format(out_nm))
-                return True
             else:
-                
                 return False
     elif model_nm == 'gt2d':
         if res in [85, 141]:
@@ -604,4 +600,11 @@ def pass_check(model_nm, res, clevel, mlevel, out_nm):
             else:
                 return False
     elif model_nm == 'fno2d':
-        return False
+        if res == 85:
+            if clevel == 3:
+                print('dimension problem ')
+                return True
+            else:
+                return False
+        else:
+            return False
