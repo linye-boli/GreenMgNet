@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd 
 from tqdm import tqdm 
 import matplotlib.pyplot as plt 
+import matplotlib as mpl
 
 def load_accuracy_log(log_paths):
     log_df = pd.DataFrame(
@@ -12,27 +13,29 @@ def load_accuracy_log(log_paths):
     for i, log_path in tqdm(enumerate(log_paths), total=len(log_paths)):
         dataset, log_info = log_path.split('/')[-2:]
         model_nm, _, _, trares, testres, clevel, mlevel, seed = log_info.split('.')[0].split('-')
-
+                    
         clevel = int(clevel[2:])
         trares = int(trares)
         testres = int(testres)
         seed = int(seed[4:])
 
-        log = pd.read_csv(log_path)
+        if (dataset in ['cosine', 'burgers', 'lnabs']) | (dataset in ['darcy', 'invdist']):
 
-        if mlevel[2:] == 'x':
-            mlevel = 'null'
-            mcode = -1
-        elif mlevel[2:] == '0':
-            mlevel = 'diag'
-            mcode = 0
-        else:
-            mcode = int(mlevel[2:])        
+            log = pd.read_csv(log_path)
 
-        # mlevel = int(mlevel[2:]) if mlevel[2:] != 'x' else -1
-        best_l2 = log.test_l2.min()
-        # if best_l2 < 0.1:
-        log_df.loc[i] = [model_nm, dataset, clevel, trares, mlevel, seed, best_l2, mcode]
+            if mlevel[2:] == 'x':
+                mlevel = 'null'
+                mcode = -1
+            elif mlevel[2:] == '0':
+                mlevel = 'diag'
+                mcode = 0
+            else:
+                mcode = int(mlevel[2:])        
+
+            # mlevel = int(mlevel[2:]) if mlevel[2:] != 'x' else -1
+            best_l2 = log.test_l2.min()
+            # if best_l2 < 0.1:
+            log_df.loc[i] = [model_nm, dataset, clevel, trares, mlevel, seed, best_l2, mcode]
 
     return log_df 
 
@@ -203,6 +206,35 @@ def vis_all_model_dataset2d_residual_trend_on_fix_resolution(df, resolution=141,
 
     return fig 
 
+
+def vis_all_model_dataset_residual_trend_on_fix_resolution_and_coarse_level(df, resolution=4095):
+    fig, axs = plt.subplots(3, 4, figsize=(20, 10))#, sharey='row')
+    sub_df = df[df.resolution == resolution]
+    colors = mpl.colormaps['cool']
+    coarse_levels = [0, 1, 2, 3, 4]
+    for m, model in enumerate(['fno1d', 'lno1d', 'ft1d', 'gt1d']):
+        for d, dataset in enumerate(['lnabs', 'burgers', 'cosine']):
+            subsub_df = sub_df[(sub_df.model == model) & (sub_df.dataset == dataset)]            
+            table_mean = subsub_df.pivot_table(values='test_l2', index=['coarse_level'], columns=['residual'], aggfunc=np.mean)
+            table_min = subsub_df.pivot_table(values='test_l2', index=['coarse_level'], columns=['residual'], aggfunc=np.min)
+            table_max = subsub_df.pivot_table(values='test_l2', index=['coarse_level'], columns=['residual'], aggfunc=np.max)
+            
+            for r, residual in enumerate(['null', 'diag', 'ml1', 'ml2', 'ml3', 'ml4']):
+                axs[d][m].plot(table_mean.index, table_mean[[residual]].values.reshape(-1), "-",color=colors(r*0.2), label=residual)
+                axs[d][m].fill_between(table_mean.index, 
+                                    table_min[[residual]].values.reshape(-1),
+                                    table_max[[residual]].values.reshape(-1), color=colors(r*0.2), alpha=0.1)
+                
+            axs[d][m].set_xticks(coarse_levels)
+            axs[d][m].set_xticklabels(coarse_levels)
+            axs[d][m].set_title("{:}-{:}".format(model, dataset))
+            axs[d][m].set_yscale('log')
+            axs[d][m].grid(axis='both', which='both')
+            axs[d][m].legend(loc='upper left')
+            axs[d][m].set_xlabel('coarse level')
+            axs[d][m].set_ylabel('Relative error')
+            
+    fig.tight_layout()    
 
 def pass_check(model_nm, res, clevel, mlevel, out_nm):
     if model_nm == 'ft2d':
