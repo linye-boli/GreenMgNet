@@ -606,5 +606,11 @@ def pass_check(model_nm, res, clevel, mlevel, out_nm):
                 return True
             else:
                 return False
+        elif res == 141:
+            if clevel == 3:
+                print('{:} : dimension problem'.format(out_nm))
+                return True
+            else:
+                return False
         else:
             return False

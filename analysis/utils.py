@@ -259,33 +259,9 @@ def pass_check(model_nm, res, clevel, mlevel, out_nm):
             else:
                 return False
     elif model_nm == 'gt2d':
-        if res in [85, 141]:
-            return False
-        elif res == 211:
-            if clevel == 0:
-                if mlevel in ['null', 'diag', 'ml1', 'ml2']:
-                    return False 
-                else:
-                    print('{:} : too long for training'.format(out_nm))
-                    return True
-            else:
-                return False
-        else:
-            return False
+        return False
     elif model_nm == 'lno2d':
-        if res in [85, 141]:
-            return False 
-        elif res == 211:
-            if clevel == 0:
-                if mlevel in ['null', 'diag', 'ml1', 'ml2']:
-                    return False 
-                else:
-                    print('{:} : too long for training'.format(out_nm))
-                    return True 
-            else:
-                return False 
-        else:
-            return True
+        return True
     elif model_nm == 'fno2d':
         if res == 85:
             if clevel == 3:
