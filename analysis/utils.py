@@ -325,7 +325,7 @@ def log_filt_2d(df, min_nexp=5, n=4):
             for coarse_level in [0, 1, 2, 3]:
                 for residual in ['null', 'diag', 'ml1', 'ml2', 'ml3']:
                     for resolution in [85, 141, 211, 421]:
-                        sub_df = log2d_df[(log2d_df.model == model) & (log2d_df.dataset == dataset) & (log2d_df.coarse_level == coarse_level) & (log2d_df.residual == residual) & (log2d_df.resolution == resolution)]
+                        sub_df = df[(df.model == model) & (df.dataset == dataset) & (df.coarse_level == coarse_level) & (df.residual == residual) & (df.resolution == resolution)]
                         filt_df = sub_df.sort_values(by='test_l2').iloc[:min_nexp]
                         if (filt_df.shape[0] < min_nexp) & (coarse_level == n):
                             if not pass_check(model, resolution, coarse_level, residual, ' '):
