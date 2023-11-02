@@ -7,7 +7,7 @@ import json
 
 def load_profile_log(plog_paths):
     plogs = []
-    for i, plog_path in enumerate(plog_paths):
+    for i, plog_path in tqdm(enumerate(plog_paths), total=len(plog_paths)):
         card_nm, _, _, plog_info = plog_path.split('/')[-4:]
         model_nm, h, w, trares, testres, clevel, mlevel = plog_info.split('.')[0].split('-')
         if mlevel[2:] == 'x':
@@ -273,27 +273,29 @@ def vis_all_model_dataset2d_residual_trend_on_fix_resolution_and_coarse_level(df
     sub_df = df[df.resolution == resolution]
     colors = mpl.colormaps['cool']
     coarse_levels = [0, 1, 2, 3]
-    for m, model in enumerate(['fno1d', 'lno1d', 'ft1d', 'gt1d']):
-        for d, dataset in enumerate(['darcy', 'invidst']):
+    for m, model in enumerate(['fno2d', 'lno2d', 'ft2d', 'gt2d']):
+        for d, dataset in enumerate(['darcy', 'invdist']):
             subsub_df = sub_df[(sub_df.model == model) & (sub_df.dataset == dataset)]            
-            table_mean = subsub_df.pivot_table(values='test_l2', index=['coarse_level'], columns=['residual'], aggfunc=np.mean)
-            table_min = subsub_df.pivot_table(values='test_l2', index=['coarse_level'], columns=['residual'], aggfunc=np.min)
-            table_max = subsub_df.pivot_table(values='test_l2', index=['coarse_level'], columns=['residual'], aggfunc=np.max)
             
-            for r, residual in enumerate(['null', 'diag', 'ml1', 'ml2', 'ml3']):
-                axs[d][m].plot(table_mean.index, table_mean[[residual]].values.reshape(-1), "-",color=colors(r*0.2), label=residual)
-                axs[d][m].fill_between(table_mean.index, 
-                                    table_min[[residual]].values.reshape(-1),
-                                    table_max[[residual]].values.reshape(-1), color=colors(r*0.2), alpha=0.1)
+            if len(subsub_df) != 0 :
+                table_mean = subsub_df.pivot_table(values='test_l2', index=['coarse_level'], columns=['residual'], aggfunc=np.mean)
+                table_min = subsub_df.pivot_table(values='test_l2', index=['coarse_level'], columns=['residual'], aggfunc=np.min)
+                table_max = subsub_df.pivot_table(values='test_l2', index=['coarse_level'], columns=['residual'], aggfunc=np.max)
                 
-            axs[d][m].set_xticks(coarse_levels)
-            axs[d][m].set_xticklabels(coarse_levels)
-            axs[d][m].set_title("{:}-{:}".format(model, dataset))
-            axs[d][m].set_yscale('log')
-            axs[d][m].grid(axis='both', which='both')
-            axs[d][m].legend(loc='upper left')
-            axs[d][m].set_xlabel('coarse level')
-            axs[d][m].set_ylabel('Relative error')
+                for r, residual in enumerate(['null', 'diag', 'ml1', 'ml2', 'ml3']):
+                    axs[d][m].plot(table_mean.index, table_mean[[residual]].values.reshape(-1), "-",color=colors(r*0.2), label=residual)
+                    axs[d][m].fill_between(table_mean.index, 
+                                        table_min[[residual]].values.reshape(-1),
+                                        table_max[[residual]].values.reshape(-1), color=colors(r*0.2), alpha=0.1)
+                    
+                axs[d][m].set_xticks(coarse_levels)
+                axs[d][m].set_xticklabels(coarse_levels)
+                axs[d][m].set_title("{:}-{:}".format(model, dataset))
+                axs[d][m].set_yscale('log')
+                axs[d][m].grid(axis='both', which='both')
+                axs[d][m].legend(loc='upper left')
+                axs[d][m].set_xlabel('coarse level')
+                axs[d][m].set_ylabel('Relative error')
             
     fig.tight_layout()    
 
