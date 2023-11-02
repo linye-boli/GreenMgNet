@@ -3,6 +3,38 @@ import pandas as pd
 from tqdm import tqdm 
 import matplotlib.pyplot as plt 
 import matplotlib as mpl
+import json 
+
+def load_profile_log(plog_paths):
+    plogs = []
+    for i, plog_path in enumerate(plog_paths):
+        card_nm, _, _, plog_info = plog_path.split('/')[-4:]
+        model_nm, h, w, trares, testres, clevel, mlevel = plog_info.split('.')[0].split('-')
+        if mlevel[2:] == 'x':
+            mlevel = 'null'
+        elif mlevel[2:] == '0':
+            mlevel = 'diag'
+
+        clevel = int(clevel[2:])
+        trares = int(trares)
+        testres = int(testres)
+        
+        with open(plog_path, 'r') as f:
+            plog = json.load(f)
+
+        plog['card'] = card_nm
+        plog['model'] = model_nm
+        plog['coarse_level'] = clevel
+        plog['resolution'] = trares 
+        plog['residual'] = mlevel
+        plog['model_FLOPs'] = float(plog['model_FLOPs'][:-1])
+        plog['model_nparam'] = float(plog['model_nparam'][:-1])
+        
+
+        plogs.append(plog) 
+    
+    plog_df = pd.DataFrame(plogs)
+    return plog_df
 
 def load_accuracy_log(log_paths):
     log_df = pd.DataFrame(
@@ -264,6 +296,48 @@ def vis_all_model_dataset2d_residual_trend_on_fix_resolution_and_coarse_level(df
             axs[d][m].set_ylabel('Relative error')
             
     fig.tight_layout()    
+
+def log_filt_1d(df, min_nexp=5, n=4):
+    filt = []
+    not_enough = []
+    for model in ['fno1d', 'lno1d', 'ft1d', 'gt1d']:
+        for dataset in ['cosine', 'burgers', 'lnabs']:
+            for coarse_level in [0, 1, 2, 3, 4]:
+                for residual in ['null', 'diag', 'ml1', 'ml2', 'ml3', 'ml4']:
+                    for resolution in [512, 1024, 2048, 4096, 8192]:
+                        sub_df = df[
+                            (df.model == model) & (df.dataset == dataset) & (df.coarse_level == coarse_level) & (df.residual == residual) & (df.resolution == resolution)]
+                        filt_df = sub_df.sort_values(by='seed').iloc[:5]
+                        if (filt_df.shape[0] < min_nexp) & (coarse_level == n):
+                            not_enough.append([model, dataset, coarse_level, residual, resolution, filt_df.seed.tolist()])
+                        
+                        filt.append(filt_df)
+
+    log1d_filt_df = pd.concat(filt)
+    not_enough_df = pd.DataFrame(not_enough, columns=['model_nm', 'dataset', 'coarse_level', 'residual', 'resolution', 'seeds'])
+    return log1d_filt_df, not_enough_df
+
+def log_filt_2d(df, min_nexp=5, n=4):
+    filt = []
+    not_enough = []
+    for model in ['fno2d', 'lno2d', 'ft2d', 'gt2d']:
+        for dataset in ['darcy', 'invdist']:
+            for coarse_level in [0, 1, 2, 3]:
+                for residual in ['null', 'diag', 'ml1', 'ml2', 'ml3']:
+                    for resolution in [85, 141, 211, 421]:
+                        sub_df = log2d_df[(log2d_df.model == model) & (log2d_df.dataset == dataset) & (log2d_df.coarse_level == coarse_level) & (log2d_df.residual == residual) & (log2d_df.resolution == resolution)]
+                        filt_df = sub_df.sort_values(by='test_l2').iloc[:min_nexp]
+                        if (filt_df.shape[0] < min_nexp) & (coarse_level == n):
+                            if not pass_check(model, resolution, coarse_level, residual, ' '):
+                                not_enough.append([model, dataset, coarse_level, residual, resolution, filt_df.seed.tolist()])
+                        
+                        filt.append(filt_df)
+
+    log2d_filt_df = pd.concat(filt)
+    not_enough_df = pd.DataFrame(not_enough, columns=['model_nm', 'dataset', 'coarse_level', 'residual', 'resolution', 'seeds'])
+    return log2d_filt_df, not_enough_df
+
+
 
 def pass_check(model_nm, res, clevel, mlevel, out_nm):
     if model_nm == 'ft2d':
