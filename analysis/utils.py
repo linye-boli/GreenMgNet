@@ -4,6 +4,8 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt 
 import matplotlib as mpl
 import json 
+import matplotlib.ticker as ticker
+from matplotlib.ticker import LogFormatter
 
 def load_profile_log(plog_paths):
     plogs = []
@@ -70,6 +72,9 @@ def load_accuracy_log(log_paths):
             log_df.loc[i] = [model_nm, dataset, clevel, trares, mlevel, seed, best_l2, mcode]
 
     return log_df 
+
+def load_val_log(log_paths):
+    pass
 
 def vis1d_single_model_dataset_result(df, model, dataset, ml='ml3', clevel=0):
     sub_df = df[(df.dataset == dataset) & (df.model == model) & (df.coarse_level == clevel) & ((df.residual == 'null') | (df.residual == 'diag') | (df.residual == ml))]
@@ -168,8 +173,8 @@ def vis1d_all_model_dataset_result(df, ml='ml3', clevel=0):
     
     return fig 
 
-def vis_all_model_dataset_residual_trend_on_fix_resolution(df, resolution=4096, colors=['r','b','c','m']):
-    sub_df = df[df.resolution == resolution]
+def vis_acc_model_ds1d_ml_fixres(df, resolution=4096, clevel=0, colors=['r','b','c','m']):
+    sub_df = df[(df.resolution == resolution) & (df.coarse_level == clevel)]
     table_mean = sub_df.pivot_table(values='test_l2', index=['dataset', 'model'], columns=['residual'], aggfunc=np.mean)
     table_min = sub_df.pivot_table(values='test_l2', index=['dataset', 'model'], columns=['residual'], aggfunc=np.min)
     table_max = sub_df.pivot_table(values='test_l2', index=['dataset', 'model'], columns=['residual'], aggfunc=np.max)
@@ -189,7 +194,8 @@ def vis_all_model_dataset_residual_trend_on_fix_resolution(df, resolution=4096, 
                 l2min.append(table_min.loc[(dataset, model), residual])
                 l2max.append(table_max.loc[(dataset, model), residual])
 
-            axs[d][m].plot(x, l2mean, "-", color=colors[m])
+            label = model if d == 0 else None
+            axs[d][m].plot(x, l2mean, "-", color=colors[m], label=label)
             axs[d][m].plot(x, l2min, ":", color=colors[m])
             axs[d][m].plot(x, l2max, ":", color=colors[m])
             axs[d][m].fill_between(x, l2min, l2max, color=colors[m], alpha=0.1)
@@ -199,22 +205,29 @@ def vis_all_model_dataset_residual_trend_on_fix_resolution(df, resolution=4096, 
             axs[d][m].set_title("{:}-{:}".format(model, dataset))
             axs[d][m].set_xticks(x)
             axs[d][m].set_xticklabels(residuals)
+
+    fig.legend(ncols=6, bbox_to_anchor=(0.5, 1.1), prop={'size':15}, loc='upper center', fontsize='small')
     fig.tight_layout()
 
     return fig 
 
-def vis_all_model_dataset2d_residual_trend_on_fix_resolution(df, resolution=141, colors=['r','b','c','m']):
-    sub_df = df[(df.resolution == resolution) & (df.residual.isin(['null', 'diag', 'ml1', 'ml2', 'ml3']))]
+def vis_acc_model_ds2d_ml_fixres(df, resolution=141, clevel=0, colors=['r','b','c','m'], isft=False):
+    sub_df = df[(df.resolution == resolution) & (df.residual.isin(['null', 'diag', 'ml1', 'ml2', 'ml3'])) & (df.coarse_level == clevel)]
     table_mean = sub_df.pivot_table(values='test_l2', index=['dataset', 'model'], columns=['residual'], aggfunc=np.mean)
     table_min = sub_df.pivot_table(values='test_l2', index=['dataset', 'model'], columns=['residual'], aggfunc=np.min)
     table_max = sub_df.pivot_table(values='test_l2', index=['dataset', 'model'], columns=['residual'], aggfunc=np.max)
 
-    fig, axs = plt.subplots(2, 3, figsize=(15, 5))
+    if isft:
+        fig, axs = plt.subplots(2, 4, figsize=(15, 5))
+        models = ['fno2d', 'lno2d', 'ft2d', 'gt2d']
+    else:
+        fig, axs = plt.subplots(2, 3, figsize=(15, 5))
+        models = ['fno2d', 'lno2d', 'gt2d']
+    
     residuals = ['null', 'diag', 'ml1', 'ml2', 'ml3'] 
     x = np.arange(len(residuals))
     for d, dataset in enumerate(['darcy', 'invdist']):
-        for m, model in enumerate(['fno2d', 'lno2d', 'gt2d']):
-            
+        for m, model in enumerate(models):            
             l2max = []
             l2min = []
             l2mean = []
@@ -224,7 +237,8 @@ def vis_all_model_dataset2d_residual_trend_on_fix_resolution(df, resolution=141,
                 l2min.append(table_min.loc[(dataset, model), residual])
                 l2max.append(table_max.loc[(dataset, model), residual])
 
-            axs[d][m].plot(x, l2mean, "-", color=colors[m])
+            label = model if d == 0 else None
+            axs[d][m].plot(x, l2mean, "-", color=colors[m], label=label)
             axs[d][m].plot(x, l2min, ":", color=colors[m])
             axs[d][m].plot(x, l2max, ":", color=colors[m])
             axs[d][m].fill_between(x, l2min, l2max, color=colors[m], alpha=0.1)
@@ -234,12 +248,14 @@ def vis_all_model_dataset2d_residual_trend_on_fix_resolution(df, resolution=141,
             axs[d][m].set_title("{:}-{:}".format(model, dataset))
             axs[d][m].set_xticks(x)
             axs[d][m].set_xticklabels(residuals)
+    
+    fig.legend(ncols=6, bbox_to_anchor=(0.5, 1.1), prop={'size':15}, loc='upper center', fontsize='small')
     fig.tight_layout()
 
     return fig 
 
 
-def vis_all_model_dataset_residual_trend_on_fix_resolution_and_coarse_level(df, resolution=4096):
+def vis_acc_model_ds1d_ml_cl_fixres(df, resolution=4096):
     fig, axs = plt.subplots(3, 4, figsize=(20, 10))#, sharey='row')
     sub_df = df[df.resolution == resolution]
     colors = mpl.colormaps['cool']
@@ -252,7 +268,8 @@ def vis_all_model_dataset_residual_trend_on_fix_resolution_and_coarse_level(df, 
             table_max = subsub_df.pivot_table(values='test_l2', index=['coarse_level'], columns=['residual'], aggfunc=np.max)
             
             for r, residual in enumerate(['null', 'diag', 'ml1', 'ml2', 'ml3', 'ml4']):
-                axs[d][m].plot(table_mean.index, table_mean[[residual]].values.reshape(-1), "-",color=colors(r*0.2), label=residual)
+                label = residual if (m == 0) & (d == 0) else None
+                axs[d][m].plot(table_mean.index, table_mean[[residual]].values.reshape(-1), "-",color=colors(r*0.2), label=label)
                 axs[d][m].fill_between(table_mean.index, 
                                     table_min[[residual]].values.reshape(-1),
                                     table_max[[residual]].values.reshape(-1), color=colors(r*0.2), alpha=0.1)
@@ -262,13 +279,52 @@ def vis_all_model_dataset_residual_trend_on_fix_resolution_and_coarse_level(df, 
             axs[d][m].set_title("{:}-{:}".format(model, dataset))
             axs[d][m].set_yscale('log')
             axs[d][m].grid(axis='both', which='both')
-            axs[d][m].legend(loc='upper left')
             axs[d][m].set_xlabel('coarse level')
             axs[d][m].set_ylabel('Relative error')
-            
+
+    fig.legend(ncols=6, bbox_to_anchor=(0.5, 1.1), prop={'size':20}, loc='upper center', fontsize='small')
     fig.tight_layout()   
 
-def vis_all_model_dataset2d_residual_trend_on_fix_resolution_and_coarse_level(df, resolution=141):
+def vis_acc_cost_model_ds1d_ml_cl_fixres(df, resolution=4096, cost='tra_time'):
+    ap_df = df[['model', 'dataset', 'coarse_level', 
+                'resolution', 'residual', 'test_l2', 
+                'tra_time', 'infer_time', 'tra_mem', 
+                'infer_mem', 'model_FLOPs', 'model_nparam']].groupby([
+                    'coarse_level', 'resolution', 'residual', 'dataset', 'model']).agg(
+                        acc = ('test_l2', 'mean'), cost = (cost, 'mean')).reset_index()
+    
+    fig, axs = plt.subplots(4, 3, figsize=(20, 15))
+    sub_df = ap_df[ap_df.resolution == resolution]
+    color_func = mpl.colormaps['viridis']
+    coarse_level = [0, 1, 2, 3, 4]
+    color_func = mpl.colormaps['viridis']
+    residuals = ['null', 'diag', 'ml1', 'ml2', 'ml3', 'ml4']
+    for m, model in enumerate(['fno1d', 'lno1d', 'ft1d', 'gt1d']):
+        for d, dataset in enumerate(['lnabs', 'burgers', 'cosine']):
+            for c in range(0, 5):
+                subsub_df = sub_df[
+                    (sub_df.model == model) & (sub_df.dataset == dataset) & (sub_df.coarse_level == c)].iloc[[5,0,1,2,3,4]]
+                axs[m][d].scatter(subsub_df.cost, subsub_df.acc, s=40, marker='o', color=color_func(c * 0.3)) 
+                label = 'coarsen level - {:}'.format(c) if (m ==0 ) & (d==0) else None
+                axs[m][d].plot(subsub_df.cost, subsub_df.acc, c=color_func(c*0.3), label=label)
+                for r in range(len(residuals)):
+                    axs[m][d].text(subsub_df.cost.iloc[r], subsub_df.acc.iloc[r], residuals[r], fontsize=12)
+        
+            axs[m][d].set_title("{:}-{:}".format(model, dataset))
+            axs[m][d].set_yscale('log')  
+            axs[m][d].set_xscale('log')    
+            axs[m][d].grid(axis='both', which='both')
+            axs[m][d].set_xlabel('Training Time Cost(sec/sample)')
+            axs[m][d].set_ylabel('Relative error')
+            axs[m][d].set_title('{:}-{:}-{:}'.format(model, dataset, resolution))
+    
+    
+    fig.legend(ncols=1, bbox_to_anchor=(1.1,0.98), 
+            labelspacing=3, prop={'size':12}, fontsize='large')
+    fig.tight_layout() 
+    return fig
+
+def vis_acc_model_ds2d_ml_cl_fixres(df, resolution=141):
     fig, axs = plt.subplots(2, 4, figsize=(20, 10))#, sharey='row')
     sub_df = df[df.resolution == resolution]
     colors = mpl.colormaps['cool']
@@ -283,7 +339,8 @@ def vis_all_model_dataset2d_residual_trend_on_fix_resolution_and_coarse_level(df
                 table_max = subsub_df.pivot_table(values='test_l2', index=['coarse_level'], columns=['residual'], aggfunc=np.max)
                 
                 for r, residual in enumerate(['null', 'diag', 'ml1', 'ml2', 'ml3']):
-                    axs[d][m].plot(table_mean.index, table_mean[[residual]].values.reshape(-1), "-",color=colors(r*0.2), label=residual)
+                    label = residual if (m == 0) & (d == 0) else None
+                    axs[d][m].plot(table_mean.index, table_mean[[residual]].values.reshape(-1), "-",color=colors(r*0.2), label=label)
                     axs[d][m].fill_between(table_mean.index, 
                                         table_min[[residual]].values.reshape(-1),
                                         table_max[[residual]].values.reshape(-1), color=colors(r*0.2), alpha=0.1)
@@ -297,7 +354,11 @@ def vis_all_model_dataset2d_residual_trend_on_fix_resolution_and_coarse_level(df
                 axs[d][m].set_xlabel('coarse level')
                 axs[d][m].set_ylabel('Relative error')
             
+    fig.legend(ncols=6, bbox_to_anchor=(0.5, 1.1), prop={'size':20}, loc='upper center', fontsize='small')
     fig.tight_layout()    
+
+def vis_acc_cost_model_dataset1d_ml_cl_fixres():
+    pass 
 
 def log_filt_1d(df, min_nexp=5, n=4):
     filt = []
@@ -338,8 +399,6 @@ def log_filt_2d(df, min_nexp=5, n=4):
     log2d_filt_df = pd.concat(filt)
     not_enough_df = pd.DataFrame(not_enough, columns=['model_nm', 'dataset', 'coarse_level', 'residual', 'resolution', 'seeds'])
     return log2d_filt_df, not_enough_df
-
-
 
 def pass_check(model_nm, res, clevel, mlevel, out_nm):
     if model_nm == 'ft2d':
