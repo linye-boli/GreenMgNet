@@ -133,6 +133,7 @@ if __name__ == '__main__':
         if test_l2 < test_l2_best:
             test_l2_best = test_l2
             if args.seed == 100:
+                print('save new best')
                 torch.save(model, model_out_path)
         
         if (ep > 10) & (test_l2_best > 0.8):
@@ -154,3 +155,4 @@ if __name__ == '__main__':
         log_df.to_csv(csv_out_path, index=False)
     else:
         print('Fail to train : ep{:} - {:}'.format(ep, test_l2_best))
+        os.remove(model_out_path)

@@ -160,3 +160,4 @@ if __name__ == '__main__':
         log_df.to_csv(csv_out_path, index=False)
     else:
         print('Fail to train : ep{:} - {:}'.format(ep, test_l2_best))
+        os.remove(model_out_path)
