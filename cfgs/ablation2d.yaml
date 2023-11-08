@@ -13,7 +13,7 @@ cb:
     - 1
     - 0
   mlevel : 0
-  mv: 'same'
+  mw: 'same'
 cc:
   clevel :
     - 0
@@ -21,7 +21,7 @@ cc:
     - 2
     - 2
   mlevel : 0
-  mv: 'same'
+  mw: 'same'
 cd :
   clevel :
     - 2
@@ -29,7 +29,7 @@ cd :
     - 0
     - 0
   mlevel : 0
-  mv: 'same'
+  mw: 'same'
 ce:
   clevel :
     - 0
@@ -37,7 +37,7 @@ ce:
     - 2
     - 0
   mlevel : 0
-  mv : 'same'
+  mw : 'same'
 ma:
   clevel : 0 
   mlevel :
@@ -45,7 +45,7 @@ ma:
     - 1
     - 2
     - 3
-  mv: 'same'
+  mw: 'same'
 mb:
   clevel : 0 
   mlevel :
@@ -53,7 +53,7 @@ mb:
     - 2
     - 1
     - 0
-  mv: 'same'
+  mw: 'same'
 mc:
   clevel : 0 
   mlevel :
@@ -61,7 +61,7 @@ mc:
     - 0
     - 2
     - 2
-  mv: 'same'
+  mw: 'same'
 md:
   clevel : 0 
   mlevel :
@@ -69,7 +69,7 @@ md:
     - 2
     - 0
     - 0
-  mv: 'same'
+  mw: 'same'
 me:
   clevel : 0 
   mlevel :
@@ -77,4 +77,4 @@ me:
     - 0
     - 0
     - 2
-  mv: 'same'
+  mw: 'same'
