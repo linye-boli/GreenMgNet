@@ -467,13 +467,17 @@ def get_arguments(parser):
     parser.add_argument('--testsub', type=int, default=8,
                         help='The interval of when sample snapshots from test sequence')
     
-    
     # ====================================
     # for model
     parser.add_argument('--clevel', type=int, default=0, 
                         help='coarsen level for kernel integral calculation')
     parser.add_argument('--mlevel', type=int, default=0,
                         help='multi-level for ml residual type. ')
+
+    # ====================================
+    # for ablation study
+    parser.add_argument('--ab_cfg', type=str, default='ca', 
+                        help='ablation study config file path')
             
     return parser.parse_args()
 
