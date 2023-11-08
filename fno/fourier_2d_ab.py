@@ -50,11 +50,6 @@ if __name__ == '__main__':
         print(f"{csv_out_path} file exists")
         exit()
 
-    ispass = pass_check('fno2d', tra_res, args.clevel, mlevel, model_nm)
-    if ispass:
-        exit()
-
-
     ################################################################
     # load_dataset
     ################################################################
@@ -69,7 +64,8 @@ if __name__ == '__main__':
                   model_cfg.modes,
                   model_cfg.width,
                   clevel=ab_cfg[args.ab_cfg].clevel,
-                  mlevel=ab_cfg[args.ab_cfg].mlevel).to(device)
+                  mlevel=ab_cfg[args.ab_cfg].mlevel,
+                  mw=ab_cfg[args.ab_cfg].mw).to(device)
     print(count_params(model))
 
     ################################################################
