@@ -12,6 +12,16 @@ from layers import (
     GalerkinAttention1d, GalerkinAttention2d)
 from utils import DenseNet, MultiLevelLayer1d, MultiLevelLayer2d
 
+def init_mlevels_weights(mlevels, method):
+    weights = []
+    for i in range(len(mlevels)):
+        if method == 'same':
+            weights.append([1] * (mlevels[i]+1))
+        else:
+            pass
+    pass 
+
+
 def clevels_n_mlevels(clevel, mlevel, nblocks):
     if isinstance(clevel, int):
         clevels = [clevel] * nblocks
@@ -98,17 +108,6 @@ class FNO1d(nn.Module):
         for i in range(nblocks):
             local_corrections.append(MultiLevelLayer1d(self.width, self.mlevels[i]))
         self.local_corrections = nn.ModuleList(local_corrections)
-
-        # mws = []
-        # for i in range(nblocks):
-        #     ws = []
-        #     for j in mlevels:
-        #         if mw == 'same':
-        #             ws.append(1)
-        #         elif mw == 'learn':
-        #             ws.append(nn.Parameter(torch.rand(, dtype=torch.float32)))
-            
-        #     mws.append(ws)
 
     def forward(self, x, a):
         seq_len = x.shape[1]
@@ -615,7 +614,7 @@ if __name__ == '__main__':
     a = torch.rand((bsz, seq_lx, seq_ly, 1))
 
     print('FNO2d test:')
-    model = FNO2d(modes1=12, modes2=12, width=32, clevel=3, mlevel=3)
+    model = FNO2d(modes1=12, modes2=12, width=32, clevel=3, mlevel=-1)
     print(model(x=x, a=a).shape)
     model = FNO2d(modes1=12, modes2=12, width=32, clevel=[3, 2, 1, 0], mlevel=3)
     print(model(x=x, a=a).shape)
@@ -629,7 +628,7 @@ if __name__ == '__main__':
     print(model(x=x, a=a).shape)
     model = LNO2d(width=64, rank=4, clevel=[3, 2, 1, 0], mlevel=3)
     print(model(x=x, a=a).shape)
-    model = LNO2d(width=64, rank=4, clevel=2, mlevel=[3, 2, 1, 0])
+    model = LNO2d(width=64, rank=4, clevel=2, mlevel=[3, 2, 1, -1])
     print(model(x=x, a=a).shape)
     model = LNO2d(width=64, rank=4, clevel=[3, 2, 1, 0], mlevel=[3, 2, 1, 0])
     print(model(x=x, a=a).shape)
