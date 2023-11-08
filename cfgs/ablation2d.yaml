@@ -1,0 +1,80 @@
+ca:
+  clevel : 
+    - 0
+    - 1
+    - 2
+    - 2
+  mlevel : 0
+  mw: 'same'
+cb:
+  clevel :
+    - 2
+    - 2
+    - 1
+    - 0
+  mlevel : 0
+  mv: 'same'
+cc:
+  clevel :
+    - 0
+    - 0
+    - 2
+    - 2
+  mlevel : 0
+  mv: 'same'
+cd :
+  clevel :
+    - 2
+    - 2
+    - 0
+    - 0
+  mlevel : 0
+  mv: 'same'
+ce:
+  clevel :
+    - 0
+    - 2
+    - 2
+    - 0
+  mlevel : 0
+  mv : 'same'
+ma:
+  clevel : 0 
+  mlevel :
+    - 0
+    - 1
+    - 2
+    - 3
+  mv: 'same'
+mb:
+  clevel : 0 
+  mlevel :
+    - 3
+    - 2
+    - 1
+    - 0
+  mv: 'same'
+mc:
+  clevel : 0 
+  mlevel :
+    - 0
+    - 0
+    - 2
+    - 2
+  mv: 'same'
+md:
+  clevel : 0 
+  mlevel :
+    - 2
+    - 2
+    - 0
+    - 0
+  mv: 'same'
+me:
+  clevel : 0 
+  mlevel :
+    - 2
+    - 0
+    - 0
+    - 2
+  mv: 'same'
