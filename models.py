@@ -36,7 +36,7 @@ def clevels_n_mlevels(clevel, mlevel, nblocks):
     return clevels, mlevels
 
 class ML1d(nn.Module):
-    def __init__(self, modes, width, clevel=0, mlevel=0, nblocks=4):
+    def __init__(self, modes, width, clevel=0, mlevel=0, nblocks=4, mw='same'):
         super(ML1d, self).__init__()
 
         self.modes1 = modes
@@ -137,7 +137,7 @@ class FNO1d(nn.Module):
         return x
 
 class FNO2d(nn.Module):
-    def __init__(self, modes1, modes2, width, clevel=0, mlevel=0, nblocks=4):
+    def __init__(self, modes1, modes2, width, clevel=0, mlevel=0, nblocks=4, mw='same'):
         super(FNO2d, self).__init__()
 
         self.modes1 = modes1
@@ -192,7 +192,7 @@ class FNO2d(nn.Module):
         return x
 
 class LNO1d(nn.Module):
-    def __init__(self, width, rank, clevel=0, mlevel=0, nblocks=4):
+    def __init__(self, width, rank, clevel=0, mlevel=0, nblocks=4, mw='same'):
         super(LNO1d, self).__init__()
         self.width = width
         self.rank = rank
@@ -249,7 +249,7 @@ class LNO1d(nn.Module):
         return x
 
 class LNO2d(nn.Module):
-    def __init__(self, width, rank, clevel=0, mlevel=0, nblocks=4):
+    def __init__(self, width, rank, clevel=0, mlevel=0, nblocks=4, mw='same'):
         super(LNO2d, self).__init__()
         self.width = width
         self.rank = rank
@@ -311,7 +311,7 @@ class LNO2d(nn.Module):
         return x
 
 class FT1d(nn.Module):
-    def __init__(self, width, nhead, clevel=0, mlevel=0, nblocks=4):
+    def __init__(self, width, nhead, clevel=0, mlevel=0, nblocks=4, mw='same'):
         super(FT1d, self).__init__()
         self.width = width
         self.nhead = nhead
@@ -368,7 +368,7 @@ class FT1d(nn.Module):
         return x
 
 class FT2d(nn.Module):
-    def __init__(self, width, nhead, clevel=0, mlevel=0, nblocks=4):
+    def __init__(self, width, nhead, clevel=0, mlevel=0, nblocks=4, mw='same'):
         super(FT2d, self).__init__()
         self.width = width
         self.nhead = nhead
@@ -427,7 +427,7 @@ class FT2d(nn.Module):
 
 
 class GT1d(nn.Module):
-    def __init__(self, width, nhead, clevel=0, mlevel=0, nblocks=4):
+    def __init__(self, width, nhead, clevel=0, mlevel=0, nblocks=4, mw='same'):
         super(GT1d, self).__init__()
         self.width = width
         self.nhead = nhead
@@ -485,7 +485,7 @@ class GT1d(nn.Module):
         return x
 
 class GT2d(nn.Module):
-    def __init__(self, width, nhead, clevel=0, mlevel=0, nblocks=4):
+    def __init__(self, width, nhead, clevel=0, mlevel=0, nblocks=4, mw='same'):
         super(GT2d, self).__init__()
         self.width = width
         self.nhead = nhead
