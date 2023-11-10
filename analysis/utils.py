@@ -38,6 +38,37 @@ def load_profile_log(plog_paths):
     plog_df = pd.DataFrame(plogs)
     return plog_df
 
+def load_dynamics_log(log_paths):
+    log_df = pd.DataFrame(
+        columns=(
+        'model', 'dataset', 'coarse_level', 
+        'resolution', 'residual', 'seed', 'test_l2', 'train_l2'))
+
+    for i, log_path in tqdm(enumerate(log_paths), total=len(log_paths)):
+        dataset, log_info = log_path.split('/')[-2:]
+        model_nm, _, _, trares, testres, clevel, mlevel, seed = log_info.split('.')[0].split('-')
+                    
+        clevel = int(clevel[2:])
+        trares = int(trares)
+        testres = int(testres)
+        seed = int(seed[4:])
+
+        if (dataset in ['cosine', 'burgers', 'lnabs']) | (dataset in ['darcy', 'invdist']):
+
+            log = pd.read_csv(log_path)
+
+            if mlevel[2:] == 'x':
+                mlevel = 'null'
+            elif mlevel[2:] == '0':
+                mlevel = 'diag'
+
+            test_l2 = np.array(log.test_l2.tolist())
+            train_l2 = np.array(log.train_l2.tolist())
+            
+            log_df.loc[i] = [model_nm, dataset, clevel, trares, mlevel, seed, test_l2, train_l2]
+
+    return log_df 
+
 def load_accuracy_log(log_paths):
     log_df = pd.DataFrame(
         columns=(
