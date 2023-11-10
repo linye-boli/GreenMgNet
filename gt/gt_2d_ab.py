@@ -15,34 +15,34 @@ import argparse
 import yaml 
 import pprint
 from utils import *
-from models import FNO2d
+from models import GT2d
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
-        description="Train a fourier neural operator 2d")
+        description="Train a fourier neural operator 1d")
     args = get_arguments(parser)
     cfg_root = '/'.join(current_path.split('/')[:-1] + ['cfgs'])
-    with open(os.path.join(cfg_root, f'fno2d-cfg.yaml')) as f:
+    with open(os.path.join(cfg_root, f'gt2d-cfg.yaml')) as f:
         model_cfg = EasyDict(yaml.full_load(f))
     with open(os.path.join(cfg_root, f'data_log-cfg.yaml')) as f:
         data_cfg = EasyDict(yaml.full_load(f))
         vars(args)['dataset_path'] = data_cfg.dataset_path
     with open(os.path.join(cfg_root, 'ablation2d.yaml')) as f:
         ab_cfg = EasyDict(yaml.full_load(f))
-
+    
     torch.cuda.empty_cache()
     device = torch.device(f'cuda:{args.device}')
 
     tra_res = int(((421-1)/args.trasub)+1)    
     test_res = int(((421-1)/args.trasub)+1)
 
-    model_nm = f'fno2d-m{model_cfg.modes}-w{model_cfg.width}'+ \
+    model_nm = f'gt2d-h{model_cfg.nhead}-w{model_cfg.width}'+ \
                f'-{tra_res}-{test_res}'+ \
                f'-{args.ab_cfg}' + \
                f'-seed{args.seed}'
-
-    log_root = os.path.join(data_cfg.ablog_dir, f'exp2d/fno2d/{args.dataset_nm}')
+    
+    log_root = os.path.join(data_cfg.log_dir, f'exp2d/gt2d/{args.dataset_nm}')
     os.makedirs(log_root, exist_ok=True)
     model_out_path = os.path.join(log_root, model_nm + '.pth')
     csv_out_path = os.path.join(log_root, model_nm + '.csv')
@@ -60,20 +60,18 @@ if __name__ == '__main__':
     # init_model
     ################################################################
     pprint.pprint(model_cfg, width=1)
-    model = FNO2d(model_cfg.modes,
-                  model_cfg.modes,
-                  model_cfg.width,
-                  clevel=ab_cfg[args.ab_cfg].clevel,
-                  mlevel=ab_cfg[args.ab_cfg].mlevel,
-                  mw=ab_cfg[args.ab_cfg].mw).to(device)
+    model = GT2d(model_cfg.width, 
+                 model_cfg.nhead,
+                 clevel=ab_cfg[args.ab_cfg].clevel,
+                 mlevel=ab_cfg[args.ab_cfg].mlevel,
+                 mw=ab_cfg[args.ab_cfg].mw).to(device)
     print(count_params(model))
 
     ################################################################
     # training and evaluation
     ################################################################
-    # iterations = args.epochs*(args.ntrain//args.batch_size)
+
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=iterations)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
 
     epochs = args.epochs
@@ -105,12 +103,12 @@ if __name__ == '__main__':
             u = u_normalizer.decode(u)
             loss = myloss(u_.view(bsz,-1), u.view(bsz,-1))
             loss.backward()
-            
             optimizer.step()
             train_mse += mse.item()
-            train_l2 += loss.item()        
+            train_l2 += loss.item()
 
         scheduler.step()
+
         model.eval()
         test_l2 = 0.0
         with torch.no_grad():
@@ -136,7 +134,7 @@ if __name__ == '__main__':
             if args.seed == 100:
                 print('save new best')
                 torch.save(model, model_out_path)
-
+        
         # if ep > 1:
         #     elapsed = pbar.format_dict["elapsed"]
         #     rate = pbar.format_dict["rate"]
