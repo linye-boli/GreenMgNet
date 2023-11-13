@@ -125,11 +125,11 @@ def load_dataset_2dt(cfg):
         T = 40
     elif cfg.dataset_nm == 'NS_V1e-4':
         tra_file_nm = 'NavierStokes_V1e-4_N1000_T30.mat'
-        test_file_nm = 'NavierStokes_V1e-4_N1000_T30.mat'
+        test_file_nm = 'NavierStokes_V1e-4_N200_T30.mat'
         T = 20
     elif cfg.dataset_nm == 'NS_V1e-5':
         tra_file_nm = 'NavierStokes_V1e-5_N1000_T20.mat'
-        test_file_nm = 'NavierStokes_V1e-5_N1000_T20.mat'
+        test_file_nm = 'NavierStokes_V1e-5_N200_T20.mat'
         T = 10
     
     tra_dataset_path = os.path.join(cfg.dataset_path, 'data2d', cfg.dataset_nm, tra_file_nm)
