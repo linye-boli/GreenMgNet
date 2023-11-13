@@ -399,6 +399,38 @@ class MultiLevelLayer2d(torch.nn.Module):
             return torch.zeros_like(x).to(x)
 
 
+class MultiLevelLayer3d(torch.nn.Module):
+    def __init__(self, width, nlevel):
+        super(MultiLevelLayer3d, self).__init__()
+
+        self.nlevel = nlevel
+        self.diag = nn.Conv3d(width, width, 1)
+        
+        if nlevel > 0:
+            conv = nn.Conv3d(width, width, 3, padding=1)
+            self.convs = nn.ModuleList([copy.deepcopy(conv) for _ in range(nlevel)])
+
+    def forward(self, x):
+        _, _, seq_lx, seq_ly, seq_lt = x.shape
+        w = self.diag(x)
+
+        if self.nlevel == 0:
+            return w
+        elif self.nlevel > 0:
+            for i, conv in enumerate(self.convs):
+                if i == 0:
+                    w += conv(x)
+                else:
+                    xH = x[:,:, ::2**i, ::2**i,::2**i]
+                    yH = conv(xH)
+                    yh = F.interpolate(yH, (seq_lx, seq_ly, seq_lt), mode='trilinear')
+                    w += yh 
+            return w
+        else:
+            return torch.zeros_like(x).to(x)
+
+
+
 # print the number of parameters
 def count_params(model):
     c = 0
@@ -606,3 +638,11 @@ def pass_check(model_nm, res, clevel, mlevel, out_nm):
                 return False
         else:
             return False
+
+
+if __name__ == '__main__':
+    x = torch.rand((5, 20, 64, 64, 36))
+    ml3d = MultiLevelLayer3d(20, 2)
+
+    y = ml3d(x)
+    print(y.shape)

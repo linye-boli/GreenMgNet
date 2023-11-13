@@ -114,6 +114,54 @@ class SpectralConv2d(nn.Module):
         x = x.permute(0,2,3,1)
         return x
 
+class SpectralConv3d(nn.Module):
+    def __init__(self, in_channels, out_channels, modes1, modes2, modes3):
+        super(SpectralConv3d, self).__init__()
+
+        """
+        3D Fourier layer. It does FFT, linear transform, and Inverse FFT.    
+        """
+
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.modes1 = modes1 #Number of Fourier modes to multiply, at most floor(N/2) + 1
+        self.modes2 = modes2
+        self.modes3 = modes3
+
+        self.scale = (1 / (in_channels * out_channels))
+        self.weights1 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, dtype=torch.cfloat))
+        self.weights2 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, dtype=torch.cfloat))
+        self.weights3 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, dtype=torch.cfloat))
+        self.weights4 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, dtype=torch.cfloat))
+
+    # Complex multiplication
+    def compl_mul3d(self, input, weights):
+        # (batch, in_channel, x,y,t ), (in_channel, out_channel, x,y,t) -> (batch, out_channel, x,y,t)
+        return torch.einsum("bixyz,ioxyz->boxyz", input, weights)
+    
+    def forward(self, x):
+        x = x.permute(0,4,1,2,3)
+
+        batchsize = x.shape[0]
+        #Compute Fourier coeffcients up to factor of e^(- something constant)
+        x_ft = torch.fft.rfftn(x, dim=[-3,-2,-1])
+
+        # Multiply relevant Fourier modes
+        out_ft = torch.zeros(batchsize, self.out_channels, x.size(-3), x.size(-2), x.size(-1)//2 + 1, dtype=torch.cfloat, device=x.device)
+        out_ft[:, :, :self.modes1, :self.modes2, :self.modes3] = \
+            self.compl_mul3d(x_ft[:, :, :self.modes1, :self.modes2, :self.modes3], self.weights1)
+        out_ft[:, :, -self.modes1:, :self.modes2, :self.modes3] = \
+            self.compl_mul3d(x_ft[:, :, -self.modes1:, :self.modes2, :self.modes3], self.weights2)
+        out_ft[:, :, :self.modes1, -self.modes2:, :self.modes3] = \
+            self.compl_mul3d(x_ft[:, :, :self.modes1, -self.modes2:, :self.modes3], self.weights3)
+        out_ft[:, :, -self.modes1:, -self.modes2:, :self.modes3] = \
+            self.compl_mul3d(x_ft[:, :, -self.modes1:, -self.modes2:, :self.modes3], self.weights4)
+
+        #Return to physical space
+        x = torch.fft.irfftn(out_ft, s=(x.size(-3), x.size(-2), x.size(-1)))
+
+        x = x.permute(0,2,3,4,1)
+        return x
 
 class SpectralConvLite1d(nn.Module):
     def __init__(self, channels, modes):
@@ -384,79 +432,94 @@ class GalerkinAttention2d(nn.Module):
 
 if __name__ == '__main__':
 
-    # inputs :
-    bsz = 5 
-    seq_len = 128 
-    cin = 32
-    cout = 32
-    v = torch.rand((bsz, seq_len, cin))
-    a = torch.rand((bsz, seq_len, 2))
-    print('v : ', v.shape)
-    print('a : ', a.shape)
+    # # inputs :
+    # bsz = 5 
+    # seq_len = 128 
+    # cin = 32
+    # cout = 32
+    # v = torch.rand((bsz, seq_len, cin))
+    # a = torch.rand((bsz, seq_len, 2))
+    # print('v : ', v.shape)
+    # print('a : ', a.shape)
 
-    # smooth_kernel cfg:
-    modes = 16
-    sk1d = SmoothKernel1d(cin, modes)
-    u = sk1d(v)
-    print('------- smooth kernel -------')
-    print('u : ', u.shape)
+    # # smooth_kernel cfg:
+    # modes = 16
+    # sk1d = SmoothKernel1d(cin, modes)
+    # u = sk1d(v)
+    # print('------- smooth kernel -------')
+    # print('u : ', u.shape)
 
-    import pdb 
-    pdb.set_trace()
+    # # spec_conv cfg:
+    # modes = 16
+    # spec_conv1d = SpectralConv1d(cin, cout, modes)
+    # u = spec_conv1d(v)
+    # print('------- spec_conv -------')
+    # print('u : ', u.shape)
 
-    # spec_conv cfg:
-    modes = 16
-    spec_conv1d = SpectralConv1d(cin, cout, modes)
-    u = spec_conv1d(v)
-    print('------- spec_conv -------')
-    print('u : ', u.shape)
+    # # Low Rank cfg
+    # rank = 4
+    # lr_1d = LowRank1d(cin, rank)
+    # u = lr_1d(v, a)
+    # print('------- lowrank -------')
+    # print('u : ', u.shape)
 
-    # Low Rank cfg
-    rank = 4
-    lr_1d = LowRank1d(cin, rank)
-    u = lr_1d(v, a)
-    print('------- lowrank -------')
-    print('u : ', u.shape)
+    # # Fourier Attention 
+    # nhead = 4
+    # fattn = FourierAttention1d(cin, cout, nhead)
+    # u = fattn(v)
+    # print('------- fourier_attn -------')
+    # print('u : ', u.shape)
 
-    # Fourier Attention 
-    nhead = 4
-    fattn = FourierAttention1d(cin, cout, nhead)
-    u = fattn(v)
-    print('------- fourier_attn -------')
-    print('u : ', u.shape)
+    # # Galerkin Attention 
+    # nhead = 4
+    # gattn = GalerkinAttention1d(cin, cout, nhead)
+    # u = gattn(v)
+    # print('------- galerkin_attn -------')
+    # print('u : ', u.shape)
 
-    # Galerkin Attention 
-    nhead = 4
-    gattn = GalerkinAttention1d(cin, cout, nhead)
-    u = gattn(v)
-    print('------- galerkin_attn -------')
-    print('u : ', u.shape)
+    # # inputs :
+    # bsz = 5 
+    # seq_lx = 141
+    # seq_ly = 141 
+    # cin = 64
+    # cout = 32
+    # v = torch.rand((bsz, seq_lx, seq_ly, cin))
+    # a = torch.rand((bsz, seq_lx, seq_ly, 3))
+    # print('------ data 2d ------')
+    # print('v : ', v.shape)
+    # print('a : ', a.shape)
 
-    # inputs :
-    bsz = 5 
-    seq_lx = 141
-    seq_ly = 141 
-    cin = 64
-    cout = 32
-    v = torch.rand((bsz, seq_lx, seq_ly, cin))
-    a = torch.rand((bsz, seq_lx, seq_ly, 3))
-    print('------ data 2d ------')
-    print('v : ', v.shape)
-    print('a : ', a.shape)
+    # lr_2d = LowRank2d(cin, rank)
+    # u = lr_2d(v, a)
+    # print('------- lowrank -------')
+    # print('u : ', u.shape)
 
-    lr_2d = LowRank2d(cin, rank)
-    u = lr_2d(v, a)
-    print('------- lowrank -------')
-    print('u : ', u.shape)
+    # nhead = 4
+    # fattn = FourierAttention2d(cin, cout, nhead)
+    # u = fattn(v)
+    # print('------- fourier_attn -------')
+    # print('u : ', u.shape)
 
-    nhead = 4
-    fattn = FourierAttention2d(cin, cout, nhead)
-    u = fattn(v)
-    print('------- fourier_attn -------')
-    print('u : ', u.shape)
+    # nhead = 4
+    # fattn = GalerkinAttention2d(cin, cout, nhead)
+    # u = fattn(v)
+    # print('------- fourier_attn -------')
+    # print('u : ', u.shape)
 
-    nhead = 4
-    fattn = GalerkinAttention2d(cin, cout, nhead)
-    u = fattn(v)
-    print('------- fourier_attn -------')
+    # inputs : 
+    bsz = 5
+    seq_lx = 64
+    seq_ly = 64
+    seq_lt = 36
+    cin = 20
+    cout = 20
+    
+    a = torch.rand((bsz, seq_lx, seq_ly, seq_lt, cin))
+
+    modes = 8
+    width = 20
+
+    spec_conv3d = SpectralConv3d(cin, cout, modes, modes, modes)
+    u = spec_conv3d(a)
+    print('------- spec_conv3d -------')
     print('u : ', u.shape)
