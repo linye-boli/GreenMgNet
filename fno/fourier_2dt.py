@@ -122,8 +122,6 @@ if __name__ == '__main__':
             for a, x, u in test_loader:
                 bsz, seq_lx, seq_ly, seq_lt, _ = a.shape
                 a, x, u = a.to(device), x.to(device), u.to(device)
-                import pdb 
-                pdb.set_trace()
                 u_ = model(a=a, x=x).reshape(bsz, seq_lx, seq_ly, seq_lt)
                 u_ = u_normalizer.decode(u_)
                 test_l2 += myloss(u_.view(bsz, -1), u.view(bsz, -1)).item()

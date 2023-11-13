@@ -208,7 +208,7 @@ class FNO3d(nn.Module):
         self.mlevels = mlevels
 
         self.p = nn.Linear(13, self.width) # input channel is 12: the solution of the first 10 timesteps + 3 locations (u(1, x, y), ..., u(10, x, y),  x, y, t)
-        self.q = DenseNet([self.width, self.width*4, 1], nn.ReLU)  # output channel_dim is 1: u1(x)
+        self.q = DenseNet([self.width, self.width*4, 1], nn.GELU)  # output channel_dim is 1: u1(x)
         kernel_integral = SpectralConv3d(self.width, self.width, self.modes1, self.modes2, self.modes3)
         self.kernel_integrals = nn.ModuleList([copy.deepcopy(kernel_integral) for _ in range(nblocks)])
 
@@ -216,6 +216,11 @@ class FNO3d(nn.Module):
         for i in range(nblocks):
             local_corrections.append(MultiLevelLayer3d(self.width, self.mlevels[i]))
         self.local_corrections = nn.ModuleList(local_corrections)
+
+        mlps = []
+        for i in range(nblocks):
+            mlps.append(DenseNet([self.width]*3, nn.GELU))
+        self.mlps = nn.ModuleList(mlps)
     
     def forward(self, x, a):
         # x : [b, x, y, t, 3]
@@ -234,6 +239,7 @@ class FNO3d(nn.Module):
             
             if self.mlevels[i] >= 0:
                 # local correction
+                x = self.mlps[i](x)
                 x1 = lc(x.permute(0, 4, 1, 2, 3)).permute(0, 2, 3, 4, 1)
 
             # smooth kernel integral
@@ -245,9 +251,9 @@ class FNO3d(nn.Module):
 
             if self.mlevels[i] >= 0:
                 # nonlinear 
-                x = F.relu(x1 + x2)
+                x = F.gelu(x1 + x2)
             else:
-                x = F.relu(x2)
+                x = F.gelu(x2)
 
         x = x.permute(0, 4, 1, 2, 3)
         x = x[..., :-self.padding]
