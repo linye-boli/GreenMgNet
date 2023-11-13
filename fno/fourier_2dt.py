@@ -79,9 +79,12 @@ if __name__ == '__main__':
     # training and evaluation
     ################################################################
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
-
     epochs = args.epochs
+    iterations = epochs*(args.ntrain//args.batch_size)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=iterations)
+
+    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
+
 
     myloss = LpLoss(size_average=False)
     u_normalizer.to(device)

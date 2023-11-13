@@ -225,19 +225,18 @@ class FNO3d(nn.Module):
         # a : [b, x, y, t, 10]
 
         _, seq_lx, seq_ly, seq_lt, _ = x.shape
-        
+
         x = torch.cat([a, x],dim=-1)
 
         x = self.p(x)
         x = x.permute(0, 4, 1, 2, 3) # 10x20x64x64x30 (b, c, x, y, t)
         x = F.pad(x, [0,self.padding]) # pad the domain if input is non-periodic (b, c, x, y, t)
         x = x.permute(0,2,3,4,1)
-
+        
         for i, (lc, kint) in enumerate(zip(self.local_corrections, self.kernel_integrals)):
             
             if self.mlevels[i] >= 0:
                 # local correction
-                x = self.mlps[i](x)
                 x1 = lc(x.permute(0, 4, 1, 2, 3)).permute(0, 2, 3, 4, 1)
 
             # smooth kernel integral
@@ -246,6 +245,7 @@ class FNO3d(nn.Module):
                 x2 = F.interpolate(x2.permute(0,4,1,2,3), (seq_lx, seq_ly, seq_lt+self.padding), mode='trilinear').permute(0,2,3,4,1)
             else:
                 x2 = kint(x)
+                x2 = self.mlps[i](x2)
 
             if self.mlevels[i] >= 0:
                 # nonlinear 
@@ -620,11 +620,11 @@ class GT3d(nn.Module):
         self.mlevels = mlevels
 
         self.p = nn.Linear(13, self.width) # input channel_dim is 2: (u0(x), x)
-        self.q = DenseNet([self.width, self.width*2, 1], nn.ReLU)  # output channel_dim is 1: u1(x)
+        self.q = DenseNet([self.width, self.width*4, 1], nn.GELU)  # output channel_dim is 1: u1(x)
         kernel_integral = GalerkinAttention3d(self.width, self.width, self.nhead)
         self.kernel_integrals = nn.ModuleList([copy.deepcopy(kernel_integral) for _ in range(nblocks)])
 
-        fnn = DenseNet([self.width, self.width, self.width], nn.ReLU)
+        fnn = DenseNet([self.width, self.width, self.width], nn.GELU)
         self.fnns = nn.ModuleList([copy.deepcopy(fnn) for _ in range(nblocks)])
 
         layer_norm = nn.LayerNorm(self.width)
