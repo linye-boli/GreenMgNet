@@ -1,4 +1,4 @@
-from data import load_dataset_1d, load_dataset_2d
+from data import load_dataset_1d, load_dataset_2d, load_dataset_2dt
 from easydict import EasyDict
 import torch
 from utils import LpLoss
@@ -44,7 +44,9 @@ def load_dataset(dataset_path, dataset_nm, ntrain, ntest, sub):
         _, test_loader, u_normalizer = load_dataset_1d(data_cfg)
     elif dataset_nm in ['darcy', 'invdist']:
         _, test_loader, u_normalizer = load_dataset_2d(data_cfg)
-
+    elif dataset_nm in ['NS_V1e-3', 'NS_V1e-4', 'NS_V1e-5']:
+        _, test_loader, u_normalizer = load_dataset_2dt(data_cfg)
+    
     return test_loader.dataset, u_normalizer
 
 def inference(idx, model, dataset, normalizer, device, is1d=True):

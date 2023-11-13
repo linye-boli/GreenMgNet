@@ -220,8 +220,6 @@ class FNO3d(nn.Module):
     def forward(self, x, a):
         # x : [b, x, y, t, 3]
         # a : [b, x, y, t, 10]
-        # import pdb
-        # pdb.set_trace()
 
         _, seq_lx, seq_ly, seq_lt, _ = x.shape
         
@@ -251,6 +249,9 @@ class FNO3d(nn.Module):
             else:
                 x = F.relu(x2)
 
+        x = x.permute(0, 4, 1, 2, 3)
+        x = x[..., :-self.padding]
+        x = x.permute(0, 2, 3, 4, 1)
         x = self.q(x)
         return x
 
