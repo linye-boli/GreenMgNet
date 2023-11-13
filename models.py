@@ -9,7 +9,7 @@ from layers import (
     SpectralConv1d, SpectralConv2d, SpectralConv3d,
     LowRank1d, LowRank2d,
     FourierAttention1d, FourierAttention2d,
-    GalerkinAttention1d, GalerkinAttention2d)
+    GalerkinAttention1d, GalerkinAttention2d, GalerkinAttention3d)
 from utils import DenseNet, MultiLevelLayer1d, MultiLevelLayer2d, MultiLevelLayer3d
 
 def init_mlevels_weights(mlevels, method):
@@ -20,7 +20,6 @@ def init_mlevels_weights(mlevels, method):
         else:
             pass
     pass 
-
 
 def clevels_n_mlevels(clevel, mlevel, nblocks):
     if isinstance(clevel, int):
@@ -190,7 +189,6 @@ class FNO2d(nn.Module):
 
         x = self.q(x)
         return x
-
 
 class FNO3d(nn.Module):
     def __init__(self, modes1, modes2, modes3, width, clevel=0, mlevel=0, nblocks=4, mw='same'):
@@ -489,7 +487,6 @@ class FT2d(nn.Module):
         x = self.q(x)
         return x
 
-
 class GT1d(nn.Module):
     def __init__(self, width, nhead, clevel=0, mlevel=0, nblocks=4, mw='same'):
         super(GT1d, self).__init__()
@@ -605,8 +602,62 @@ class GT2d(nn.Module):
         x = self.q(x)
         return x
 
+class GT3d(nn.Module):
+    def __init__(self, width, nhead, clevel=0, mlevel=0, nblocks=4, mw='same'):
+        super(GT3d, self).__init__()
+        self.width = width
+        self.nhead = nhead
+        self.nblocks = nblocks
 
+        clevels, mlevels = clevels_n_mlevels(clevel, mlevel, nblocks)
+        self.clevels = clevels
+        self.mlevels = mlevels
 
+        self.p = nn.Linear(13, self.width) # input channel_dim is 2: (u0(x), x)
+        self.q = DenseNet([self.width, self.width*2, 1], nn.ReLU)  # output channel_dim is 1: u1(x)
+        kernel_integral = GalerkinAttention3d(self.width, self.width, self.nhead)
+        self.kernel_integrals = nn.ModuleList([copy.deepcopy(kernel_integral) for _ in range(nblocks)])
+
+        fnn = DenseNet([self.width, self.width, self.width], nn.ReLU)
+        self.fnns = nn.ModuleList([copy.deepcopy(fnn) for _ in range(nblocks)])
+
+        layer_norm = nn.LayerNorm(self.width)
+        self.layer_norms1 = nn.ModuleList([copy.deepcopy(layer_norm) for _ in range(nblocks)])
+        self.layer_norms2 = nn.ModuleList([copy.deepcopy(layer_norm) for _ in range(nblocks)])
+        
+        local_corrections = []
+        for i in range(nblocks):
+            local_corrections.append(MultiLevelLayer3d(self.width, self.mlevels[i]))
+        self.local_corrections = nn.ModuleList(local_corrections)
+
+    def forward(self, x, a):
+        _, seq_lx, seq_ly, seq_lt, _ = x.shape
+        x = torch.cat([a, x],dim=-1)
+        x = self.p(x)
+
+        for i, (lc, kint, fnn, ln1, ln2) in enumerate(
+            zip(self.local_corrections, self.kernel_integrals, self.fnns, self.layer_norms1, self.layer_norms2)):
+
+            if self.mlevels[i] >= 0:
+                # local correction
+                x1 = lc(x.permute(0, 4, 1, 2, 3)).permute(0, 2, 3, 4, 1)
+
+            # smooth kernel integral
+            if self.clevels[i] != 0:
+                x2 = kint(x[:,::2**self.clevels[i],::2**self.clevels[i],::2**self.clevels[i]])
+                x2 = F.interpolate(x2.permute(0,4,1,2,3), (seq_lx, seq_ly, seq_lt), mode='trilinear').permute(0,2,3,4,1)
+            else:
+                x2 = kint(x)
+
+            if self.mlevels[i] >= 0:
+                x = ln1(x1+x2) # f' = ln(f + attn(f))
+            else:
+                x = ln1(x2)
+                
+            x = ln2(x+fnn(x)) # f = ln(f' + fnn(f'))
+
+        x = self.q(x)
+        return x
 
 if __name__ == '__main__':
     # # 1d inputs:
@@ -728,6 +779,13 @@ if __name__ == '__main__':
     x = torch.rand((bsz, seq_lx, seq_ly, seq_lt, 3))
     a = torch.rand((bsz, seq_lx, seq_ly, seq_lt, 10))
 
-    model = FNO3d(modes, modes, modes, width, clevel=0, mlevel=[0,2,0,2], nblocks=4)
+    # model = FNO3d(modes, modes, modes, width, clevel=0, mlevel=[0,2,0,2], nblocks=4)
+    # u = model(x=x,a=a)
+    # print(u.shape)
+
+    width = 32
+    head = 4
+
+    model = GT3d(width, head, clevel=3, mlevel=0, nblocks=4)
     u = model(x=x,a=a)
     print(u.shape)

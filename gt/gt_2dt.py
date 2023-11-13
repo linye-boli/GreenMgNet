@@ -15,15 +15,15 @@ import argparse
 import yaml 
 import pprint
 from utils import *
-from models import FNO3d
+from models import GT3d
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
-        description="Train a fourier neural operator 2dt")
+        description="Train a gralerkin transformer 2dt")
     args = get_arguments(parser)
     cfg_root = '/'.join(current_path.split('/')[:-1] + ['cfgs'])
-    with open(os.path.join(cfg_root, f'fno2dt-cfg.yaml')) as f:
+    with open(os.path.join(cfg_root, f'gt2dt-cfg.yaml')) as f:
         model_cfg = EasyDict(yaml.full_load(f))
     with open(os.path.join(cfg_root, f'data_log-cfg.yaml')) as f:
         data_cfg = EasyDict(yaml.full_load(f))
@@ -41,11 +41,11 @@ if __name__ == '__main__':
     else:
         mlevel = args.mlevel
 
-    model_nm = f'fno2dt-m{model_cfg.modes}-w{model_cfg.width}'+ \
-               f'-{tra_res}-{test_res}-{T_in}'+ \
+    model_nm = f'gt2dt-h{model_cfg.nhead}-w{model_cfg.width}'+ \
+               f'-{tra_res}-{test_res}-{T_in}' + \
                f'-cl{args.clevel}-ml{mlevel}' + \
                f'-seed{args.seed}'
-    log_root = os.path.join(data_cfg.log_dir, f'exp2dt/fno2dt/{args.dataset_nm}')
+    log_root = os.path.join(data_cfg.log_dir, f'exp2d/gt2dt/{args.dataset_nm}')
     os.makedirs(log_root, exist_ok=True)
     model_out_path = os.path.join(log_root, model_nm + '.pth')
     csv_out_path = os.path.join(log_root, model_nm + '.csv')
@@ -53,7 +53,7 @@ if __name__ == '__main__':
         print(f"{csv_out_path} file exists")
         exit()
 
-    # ispass = pass_check('fno2d', tra_res, args.clevel, mlevel, model_nm)
+    # ispass = pass_check('gt2d', tra_res, args.clevel, mlevel, model_nm)
     # if ispass:
     #     exit()
 
@@ -67,12 +67,10 @@ if __name__ == '__main__':
     # init_model
     ################################################################
     pprint.pprint(model_cfg, width=1)
-    model = FNO3d(modes1=model_cfg.modes,
-                  modes2=model_cfg.modes,
-                  modes3=model_cfg.modes,
-                  width=model_cfg.width,
-                  clevel=args.clevel,
-                  mlevel=args.mlevel).to(device)
+    model = GT3d(model_cfg.width, 
+                 model_cfg.nhead,
+                 clevel=args.clevel,
+                 mlevel=args.mlevel).to(device)
     print(count_params(model))
 
     ################################################################
@@ -99,10 +97,10 @@ if __name__ == '__main__':
         train_mse = 0
         train_l2 = 0
         for a, x, u in train_loader:
-            bsz, seq_lx, seq_ly, seq_lt,_ = a.shape
+            bsz, seq_lx, seq_ly, seq_lt, _ = a.shape
             a, x, u = a.to(device), x.to(device), u.to(device)
             optimizer.zero_grad()
-            
+
             u_ = model(a=a,x=x).reshape(bsz, seq_lx, seq_ly, seq_lt)
             mse = F.mse_loss(u_.view(bsz, -1), u.view(bsz, -1), reduction='mean')
 
@@ -110,12 +108,13 @@ if __name__ == '__main__':
             u = u_normalizer.decode(u)
             loss = myloss(u_.view(bsz,-1), u.view(bsz,-1))
             loss.backward()
-            
+
             optimizer.step()
             train_mse += mse.item()
-            train_l2 += loss.item()        
+            train_l2 += loss.item()
 
         scheduler.step()
+
         model.eval()
         test_l2 = 0.0
         with torch.no_grad():
@@ -140,7 +139,7 @@ if __name__ == '__main__':
             if args.seed == 4:
                 print('save new best')
                 torch.save(model, model_out_path)
-
+        
         # if ep > 1:
         #     elapsed = pbar.format_dict["elapsed"]
         #     rate = pbar.format_dict["rate"]
@@ -151,4 +150,3 @@ if __name__ == '__main__':
         
     log_df = pd.DataFrame({'train_l2': train_log, 'test_l2': test_log})
     log_df.to_csv(csv_out_path, index=False)
-
