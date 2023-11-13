@@ -1,6 +1,6 @@
 for s in 1
 do
-    for c in 4
+    for c in 4 2
     do 
         for m in 0 1
         do
