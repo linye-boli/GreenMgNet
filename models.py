@@ -12,6 +12,16 @@ from layers import (
     GalerkinAttention1d, GalerkinAttention2d)
 from utils import DenseNet, MultiLevelLayer1d, MultiLevelLayer2d
 
+def init_mlevels_weights(mlevels, method):
+    weights = []
+    for i in range(len(mlevels)):
+        if method == 'same':
+            weights.append([1] * (mlevels[i]+1))
+        else:
+            pass
+    pass 
+
+
 def clevels_n_mlevels(clevel, mlevel, nblocks):
     if isinstance(clevel, int):
         clevels = [clevel] * nblocks
@@ -26,7 +36,7 @@ def clevels_n_mlevels(clevel, mlevel, nblocks):
     return clevels, mlevels
 
 class ML1d(nn.Module):
-    def __init__(self, modes, width, clevel=0, mlevel=0, nblocks=4):
+    def __init__(self, modes, width, clevel=0, mlevel=0, nblocks=4, mw='same'):
         super(ML1d, self).__init__()
 
         self.modes1 = modes
@@ -99,17 +109,6 @@ class FNO1d(nn.Module):
             local_corrections.append(MultiLevelLayer1d(self.width, self.mlevels[i]))
         self.local_corrections = nn.ModuleList(local_corrections)
 
-        # mws = []
-        # for i in range(nblocks):
-        #     ws = []
-        #     for j in mlevels:
-        #         if mw == 'same':
-        #             ws.append(1)
-        #         elif mw == 'learn':
-        #             ws.append(nn.Parameter(torch.rand(, dtype=torch.float32)))
-            
-        #     mws.append(ws)
-
     def forward(self, x, a):
         seq_len = x.shape[1]
         x = torch.stack([a, x],dim=-1)
@@ -138,7 +137,7 @@ class FNO1d(nn.Module):
         return x
 
 class FNO2d(nn.Module):
-    def __init__(self, modes1, modes2, width, clevel=0, mlevel=0, nblocks=4):
+    def __init__(self, modes1, modes2, width, clevel=0, mlevel=0, nblocks=4, mw='same'):
         super(FNO2d, self).__init__()
 
         self.modes1 = modes1
@@ -193,7 +192,7 @@ class FNO2d(nn.Module):
         return x
 
 class LNO1d(nn.Module):
-    def __init__(self, width, rank, clevel=0, mlevel=0, nblocks=4):
+    def __init__(self, width, rank, clevel=0, mlevel=0, nblocks=4, mw='same'):
         super(LNO1d, self).__init__()
         self.width = width
         self.rank = rank
@@ -250,7 +249,7 @@ class LNO1d(nn.Module):
         return x
 
 class LNO2d(nn.Module):
-    def __init__(self, width, rank, clevel=0, mlevel=0, nblocks=4):
+    def __init__(self, width, rank, clevel=0, mlevel=0, nblocks=4, mw='same'):
         super(LNO2d, self).__init__()
         self.width = width
         self.rank = rank
@@ -312,7 +311,7 @@ class LNO2d(nn.Module):
         return x
 
 class FT1d(nn.Module):
-    def __init__(self, width, nhead, clevel=0, mlevel=0, nblocks=4):
+    def __init__(self, width, nhead, clevel=0, mlevel=0, nblocks=4, mw='same'):
         super(FT1d, self).__init__()
         self.width = width
         self.nhead = nhead
@@ -369,7 +368,7 @@ class FT1d(nn.Module):
         return x
 
 class FT2d(nn.Module):
-    def __init__(self, width, nhead, clevel=0, mlevel=0, nblocks=4):
+    def __init__(self, width, nhead, clevel=0, mlevel=0, nblocks=4, mw='same'):
         super(FT2d, self).__init__()
         self.width = width
         self.nhead = nhead
@@ -428,7 +427,7 @@ class FT2d(nn.Module):
 
 
 class GT1d(nn.Module):
-    def __init__(self, width, nhead, clevel=0, mlevel=0, nblocks=4):
+    def __init__(self, width, nhead, clevel=0, mlevel=0, nblocks=4, mw='same'):
         super(GT1d, self).__init__()
         self.width = width
         self.nhead = nhead
@@ -486,7 +485,7 @@ class GT1d(nn.Module):
         return x
 
 class GT2d(nn.Module):
-    def __init__(self, width, nhead, clevel=0, mlevel=0, nblocks=4):
+    def __init__(self, width, nhead, clevel=0, mlevel=0, nblocks=4, mw='same'):
         super(GT2d, self).__init__()
         self.width = width
         self.nhead = nhead
@@ -615,7 +614,7 @@ if __name__ == '__main__':
     a = torch.rand((bsz, seq_lx, seq_ly, 1))
 
     print('FNO2d test:')
-    model = FNO2d(modes1=12, modes2=12, width=32, clevel=3, mlevel=3)
+    model = FNO2d(modes1=12, modes2=12, width=32, clevel=3, mlevel=-1)
     print(model(x=x, a=a).shape)
     model = FNO2d(modes1=12, modes2=12, width=32, clevel=[3, 2, 1, 0], mlevel=3)
     print(model(x=x, a=a).shape)
@@ -629,7 +628,7 @@ if __name__ == '__main__':
     print(model(x=x, a=a).shape)
     model = LNO2d(width=64, rank=4, clevel=[3, 2, 1, 0], mlevel=3)
     print(model(x=x, a=a).shape)
-    model = LNO2d(width=64, rank=4, clevel=2, mlevel=[3, 2, 1, 0])
+    model = LNO2d(width=64, rank=4, clevel=2, mlevel=[3, 2, 1, -1])
     print(model(x=x, a=a).shape)
     model = LNO2d(width=64, rank=4, clevel=[3, 2, 1, 0], mlevel=[3, 2, 1, 0])
     print(model(x=x, a=a).shape)
