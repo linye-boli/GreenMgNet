@@ -430,6 +430,50 @@ class GalerkinAttention2d(nn.Module):
 
         return attn_out 
 
+class GalerkinAttention3d(nn.Module):
+    def __init__(self, in_channels, out_channels, nhead=5):
+        super(GalerkinAttention3d, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.nhead = nhead
+
+        self.Wq = nn.Linear(in_channels, out_channels*nhead)
+        self.Wk = nn.Linear(in_channels, out_channels*nhead)
+        self.Wv = nn.Linear(in_channels, out_channels*nhead)
+        self.oproj = nn.Linear(out_channels*nhead, out_channels)
+
+        self.LnK = nn.ModuleList([copy.deepcopy(nn.LayerNorm(out_channels)) for _ in range(nhead)])
+        self.LnV = nn.ModuleList([copy.deepcopy(nn.LayerNorm(out_channels)) for _ in range(nhead)])
+
+    def forward(self, v):
+        # v (batch, n, f)
+        _, nx, ny, nt, _ = v.shape
+        n = nx * ny
+        d = self.out_channels
+        h = self.nhead
+
+        Q = self.Wq(v)
+        K = self.Wk(v)
+        V = self.Wv(v)
+
+        Q = rearrange(Q, 'b x y t (h d) -> b h (x y t) d', d=d, h=h)
+        K = rearrange(K, 'b x y t (h d) -> b h (x y t) d', d=d, h=h)
+        V = rearrange(V, 'b x y t (h d) -> b h (x y t) d', d=d, h=h)
+
+        K = torch.stack([norm(x) for norm, x in zip(self.LnK, (K[:,i,...] for i in range(h)))], dim=1)
+        V = torch.stack([norm(x) for norm, x in zip(self.LnV, (V[:,i,...] for i in range(h)))], dim=1)
+        
+        attn_map = torch.einsum('bhmd,bhmc->bhdc', K, V)
+        attn_out = torch.einsum('bhld,bhdc->bhlc', Q, attn_map)
+        attn_out = rearrange(attn_out, 'b h l d -> b l (h d)')
+        attn_out = self.oproj(attn_out)
+        attn_out = attn_out / n
+
+        attn_out = rearrange(attn_out, 'b (x y t) l -> b x y t l', x=nx, y=ny)
+
+        return attn_out 
+
+
 if __name__ == '__main__':
 
     # # inputs :
@@ -510,16 +554,23 @@ if __name__ == '__main__':
     bsz = 5
     seq_lx = 64
     seq_ly = 64
-    seq_lt = 36
+    seq_lt = 30
     cin = 20
     cout = 20
     
     a = torch.rand((bsz, seq_lx, seq_ly, seq_lt, cin))
 
-    modes = 8
-    width = 20
+    # modes = 8
+    # width = 20
 
-    spec_conv3d = SpectralConv3d(cin, cout, modes, modes, modes)
-    u = spec_conv3d(a)
-    print('------- spec_conv3d -------')
+    # spec_conv3d = SpectralConv3d(cin, cout, modes, modes, modes)
+    # u = spec_conv3d(a)
+    # print('------- spec_conv3d -------')
+    # print('u : ', u.shape)
+
+    nhead = 4 
+    gattn = GalerkinAttention3d(cin, cout, nhead)
+    u = gattn(a)
+    print('------- galerkin_attn3d -------')
     print('u : ', u.shape)
+
