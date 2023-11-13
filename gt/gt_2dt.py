@@ -45,7 +45,7 @@ if __name__ == '__main__':
                f'-{tra_res}-{test_res}-{T_in}' + \
                f'-cl{args.clevel}-ml{mlevel}' + \
                f'-seed{args.seed}'
-    log_root = os.path.join(data_cfg.log_dir, f'exp2d/gt2dt/{args.dataset_nm}')
+    log_root = os.path.join(data_cfg.log_dir, f'exp2dt/gt2dt/{args.dataset_nm}')
     os.makedirs(log_root, exist_ok=True)
     model_out_path = os.path.join(log_root, model_nm + '.pth')
     csv_out_path = os.path.join(log_root, model_nm + '.csv')
