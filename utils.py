@@ -407,7 +407,8 @@ class MultiLevelLayer3d(torch.nn.Module):
         self.diag = nn.Conv3d(width, width, 1)
         
         if nlevel > 0:
-            conv = nn.Conv3d(width, width, 3, padding=1)
+            conv = nn.Conv3d(width, width, 3, padding=1, bias=False)
+            conv.weight.data.zero_()
             self.convs = nn.ModuleList([copy.deepcopy(conv) for _ in range(nlevel)])
 
     def forward(self, x):
