@@ -119,31 +119,48 @@ def load_dataset_2dt(cfg):
     s = 64 // sub
     T_in = 10
 
-    if cfg.dataset_nm == 'NS_V1e-3':
-        tra_file_nm = 'NavierStokes_V1e-3_N1000_T50.mat'
-        test_file_nm = 'NavierStokes_V1e-3_N200_T50.mat'
-        T = 40
-    elif cfg.dataset_nm == 'NS_V1e-4':
-        tra_file_nm = 'NavierStokes_V1e-4_N1000_T30.mat'
-        test_file_nm = 'NavierStokes_V1e-4_N1000_T30.mat'
-        T = 20
-    elif cfg.dataset_nm == 'NS_V1e-5':
-        tra_file_nm = 'NavierStokes_V1e-5_N1000_T20.mat'
-        test_file_nm = 'NavierStokes_V1e-5_N1000_T20.mat'
-        T = 10
-    
-    tra_dataset_path = os.path.join(cfg.dataset_path, 'data2d', cfg.dataset_nm, tra_file_nm)
-    tra_dataloader = MatReader(tra_dataset_path)
-    test_dataset_path = os.path.join(cfg.dataset_path, 'data2d', cfg.dataset_nm, test_file_nm)
-    test_dataloader = MatReader(test_dataset_path)
+    if "NS" in cfg.dataset_nm:
+        if cfg.dataset_nm == 'NS_V1e-3':
+            tra_file_nm = 'NavierStokes_V1e-3_N1000_T50.mat'
+            test_file_nm = 'NavierStokes_V1e-3_N200_T50.mat'
+            T = 40
+        elif cfg.dataset_nm == 'NS_V1e-4':
+            tra_file_nm = 'NavierStokes_V1e-4_N1000_T30.mat'
+            test_file_nm = 'NavierStokes_V1e-4_N200_T30.mat'
+            T = 20
+        elif cfg.dataset_nm == 'NS_V1e-5':
+            tra_file_nm = 'NavierStokes_V1e-5_N1000_T20.mat'
+            test_file_nm = 'NavierStokes_V1e-5_N200_T20.mat'
+            T = 10
+        
+        tra_dataset_path = os.path.join(cfg.dataset_path, 'data2d', cfg.dataset_nm, tra_file_nm)
+        tra_reader = MatReader(tra_dataset_path)
+        test_dataset_path = os.path.join(cfg.dataset_path, 'data2d', cfg.dataset_nm, test_file_nm)
+        test_reader = MatReader(test_dataset_path)
 
-    u_train = tra_dataloader.read_field('u')
-    train_a = u_train[:ntrain,::sub,::sub,:T_in] # 1000x64x64x10
-    train_u = u_train[:ntrain,::sub,::sub,T_in:T+T_in] # 1000x64x64x30
+        u_train = tra_reader.read_field('u')
+        train_a = u_train[:ntrain,::sub,::sub,:T_in] # 1000x64x64x10
+        train_u = u_train[:ntrain,::sub,::sub,T_in:T+T_in] # 1000x64x64x30
 
-    u_test = test_dataloader.read_field('u')
-    test_a = u_test[-ntest:,::sub,::sub,:T_in]
-    test_u = u_test[-ntest:,::sub,::sub,T_in:T+T_in]
+        u_test = test_reader.read_field('u')
+        test_a = u_test[-ntest:,::sub,::sub,:T_in]
+        test_u = u_test[-ntest:,::sub,::sub,T_in:T+T_in]
+    elif 'ns' in cfg.dataset_nm:
+        if cfg.dataset_nm == 'ns_V1e-3':
+            file_nm = 'ns_V1e-3_N5000_T50.mat'
+            T = 40
+        elif cfg.dataset_nm == 'ns_V1e-4':
+            file_nm = 'ns_V1e-4_N10000_T30.mat'
+            T = 20
+        
+        dataset_path = os.path.join(cfg.dataset_path, 'data2d', cfg.dataset_nm, file_nm)
+        data_reader = MatReader(dataset_path)
+
+        u = data_reader.read_field('u')
+        train_a = u[:ntrain,::sub,::sub,:T_in] # 1000x64x64x10
+        train_u = u[:ntrain,::sub,::sub,T_in:T+T_in] # 1000x64x64x30
+        test_a = u[-ntest:,::sub,::sub,:T_in]
+        test_u = u[-ntest:,::sub,::sub,T_in:T+T_in]
 
     assert (s == train_u.shape[-2])
     assert (T == train_u.shape[-1])
