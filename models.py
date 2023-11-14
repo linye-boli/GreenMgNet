@@ -220,13 +220,13 @@ class FNO3d(nn.Module):
             mlps.append(DenseNet([self.width]*3, nn.GELU))
         self.mlps = nn.ModuleList(mlps)
     
-    def forward(self, x, a):
+    def forward(self, a, x=None):
         # x : [b, x, y, t, 3]
         # a : [b, x, y, t, 10]
 
-        _, seq_lx, seq_ly, seq_lt, _ = x.shape
-
-        x = torch.cat([a, x],dim=-1)
+        _, seq_lx, seq_ly, seq_lt, _ = a.shape
+        grid = self.get_grid(a.shape, a.device) 
+        x = torch.cat([a, grid],dim=-1)
 
         x = self.p(x)
         x = x.permute(0, 4, 1, 2, 3) # 10x20x64x64x30 (b, c, x, y, t)
@@ -258,6 +258,16 @@ class FNO3d(nn.Module):
         x = x.permute(0, 2, 3, 4, 1)
         x = self.q(x)
         return x
+    
+    def get_grid(self, shape, device):
+        batchsize, size_x, size_y, size_z = shape[0], shape[1], shape[2], shape[3]
+        gridx = torch.tensor(np.linspace(0, 1, size_x), dtype=torch.float)
+        gridx = gridx.reshape(1, size_x, 1, 1, 1).repeat([batchsize, 1, size_y, size_z, 1])
+        gridy = torch.tensor(np.linspace(0, 1, size_y), dtype=torch.float)
+        gridy = gridy.reshape(1, 1, size_y, 1, 1).repeat([batchsize, size_x, 1, size_z, 1])
+        gridz = torch.tensor(np.linspace(0, 1, size_z), dtype=torch.float)
+        gridz = gridz.reshape(1, 1, 1, size_z, 1).repeat([batchsize, size_x, size_y, 1, 1])
+        return torch.cat((gridx, gridy, gridz), dim=-1).to(device)
 
 class LNO1d(nn.Module):
     def __init__(self, width, rank, clevel=0, mlevel=0, nblocks=4, mw='same'):
