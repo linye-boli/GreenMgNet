@@ -2,7 +2,7 @@ for s in 1
 do
     for c in 0 1
     do 
-        for m in 0 1 2 3
+        for m in 1 0 2 3 
         do
             for ds in ns_V1e-3 ns_V1e-4
             do
