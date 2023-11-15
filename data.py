@@ -176,21 +176,10 @@ def load_dataset_2dt(cfg):
     train_a = train_a.reshape(ntrain,s,s,1,T_in).repeat([1,1,1,T,1]) # 1000x64x64x30x10
     test_a = test_a.reshape(ntest,s,s,1,T_in).repeat([1,1,1,T,1]) # 200x64x64x30x10
 
-    batchsize, size_x, size_y, size_z = 1, s, s, T
-    gridx = torch.tensor(np.linspace(0, 1, size_x), dtype=torch.float)
-    gridx = gridx.reshape(1, size_x, 1, 1, 1).repeat([batchsize, 1, size_y, size_z, 1])
-    gridy = torch.tensor(np.linspace(0, 1, size_y), dtype=torch.float)
-    gridy = gridy.reshape(1, 1, size_y, 1, 1).repeat([batchsize, size_x, 1, size_z, 1])
-    gridz = torch.tensor(np.linspace(0, 1, size_z), dtype=torch.float)
-    gridz = gridz.reshape(1, 1, 1, size_z, 1).repeat([batchsize, size_x, size_y, 1, 1])
-    grid = torch.cat((gridx, gridy, gridz), dim=-1)
-    grid_train = grid.repeat(ntrain,1,1,1,1).float()
-    grid_test = grid.repeat(ntest,1,1,1,1).float()
-
     train_loader = torch.utils.data.DataLoader(
-        torch.utils.data.TensorDataset(train_a, grid_train, train_u), batch_size=batch_size, shuffle=True)
+        torch.utils.data.TensorDataset(train_a, train_u), batch_size=batch_size, shuffle=True)
     test_loader = torch.utils.data.DataLoader(
-        torch.utils.data.TensorDataset(test_a, grid_test, test_u), batch_size=batch_size, shuffle=False)
+        torch.utils.data.TensorDataset(test_a, test_u), batch_size=batch_size, shuffle=False)
 
     return train_loader, test_loader, y_normalizer   
 
