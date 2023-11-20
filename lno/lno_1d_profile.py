@@ -23,7 +23,7 @@ import nvsmi
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
-        description="Train a fourier neural operator 1d")
+        description="low-rank neural operator 1d profile")
     args = get_arguments(parser)
     cfg_root = '/'.join(current_path.split('/')[:-1] + ['cfgs'])
     with open(os.path.join(cfg_root, f'lno1d-cfg.yaml')) as f:
