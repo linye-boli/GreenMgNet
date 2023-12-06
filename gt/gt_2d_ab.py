@@ -42,7 +42,7 @@ if __name__ == '__main__':
                f'-{args.ab_cfg}' + \
                f'-seed{args.seed}'
     
-    log_root = os.path.join(data_cfg.log_dir, f'exp2d/gt2d/{args.dataset_nm}')
+    log_root = os.path.join(data_cfg.ablog_dir, f'exp2d/gt2d/{args.dataset_nm}')
     os.makedirs(log_root, exist_ok=True)
     model_out_path = os.path.join(log_root, model_nm + '.pth')
     csv_out_path = os.path.join(log_root, model_nm + '.csv')

@@ -411,7 +411,7 @@ class MultiLevelLayer3d(torch.nn.Module):
             conv.weight.data.zero_()
             self.convs = nn.ModuleList([copy.deepcopy(conv) for _ in range(nlevel)])
 
-    def forward(self, x):
+    def forward(self, x):        
         _, _, seq_lx, seq_ly, seq_lt = x.shape
         w = self.diag(x)
 

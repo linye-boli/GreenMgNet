@@ -146,6 +146,7 @@ def load_dataset_2dt(cfg):
         test_a = u_test[-ntest:,::sub,::sub,:T_in]
         test_u = u_test[-ntest:,::sub,::sub,T_in:T+T_in]
     elif 'ns' in cfg.dataset_nm:
+
         if cfg.dataset_nm == 'ns_V1e-3':
             file_nm = 'ns_V1e-3_N5000_T50.mat'
             T = 40

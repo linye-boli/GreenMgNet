@@ -77,7 +77,10 @@ def load_accuracy_log(log_paths):
 
     for i, log_path in tqdm(enumerate(log_paths), total=len(log_paths)):
         dataset, log_info = log_path.split('/')[-2:]
-        model_nm, _, _, trares, testres, clevel, mlevel, seed = log_info.split('.')[0].split('-')
+        try:
+            model_nm, _, _, trares, testres, clevel, mlevel, seed = log_info.split('.')[0].split('-')
+        except:
+            print(log_info)
                     
         clevel = int(clevel[2:])
         trares = int(trares)

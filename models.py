@@ -219,6 +219,12 @@ class FNO3d(nn.Module):
         for i in range(nblocks):
             mlps.append(DenseNet([self.width]*3, nn.GELU))
         self.mlps = nn.ModuleList(mlps)
+
+        layer_norm = nn.LayerNorm(self.width)
+        self.layer_norms = nn.ModuleList([copy.deepcopy(layer_norm) for _ in range(nblocks)])
+
+        if mw == 'same':
+            self.mw = mw 
     
     def forward(self, a, x=None):
         # x : [b, x, y, t, 3]
@@ -233,7 +239,7 @@ class FNO3d(nn.Module):
         x = F.pad(x, [0,self.padding]) # pad the domain if input is non-periodic (b, c, x, y, t)
         x = x.permute(0,2,3,4,1)
         
-        for i, (lc, kint) in enumerate(zip(self.local_corrections, self.kernel_integrals)):
+        for i, (lc, kint, ln) in enumerate(zip(self.local_corrections, self.kernel_integrals, self.layer_norms)):
             
             if self.mlevels[i] >= 0:
                 # local correction
@@ -243,15 +249,20 @@ class FNO3d(nn.Module):
             if self.clevels[i] != 0:
                 x2 = kint(x[:,::2**self.clevels[i],::2**self.clevels[i],::2**self.clevels[i]])
                 x2 = F.interpolate(x2.permute(0,4,1,2,3), (seq_lx, seq_ly, seq_lt+self.padding), mode='trilinear').permute(0,2,3,4,1)
+                x2 = self.mlps[i](x2)
             else:
                 x2 = kint(x)
                 x2 = self.mlps[i](x2)
 
             if self.mlevels[i] >= 0:
                 # nonlinear 
-                x = F.gelu(x1 + x2)
+                x3 = x1 + x2
+                # x3 = x1 + ln(x2)
+                # x3 = ln(x1+x2)
             else:
-                x = F.gelu(x2)
+                x3 = x2
+            
+            x = F.gelu(x3)
 
         x = x.permute(0, 4, 1, 2, 3)
         x = x[..., :-self.padding]
