@@ -5,6 +5,22 @@ import torch.nn.functional as F
 from einops import rearrange, repeat
 import pandas as pd
 
+def toeplitz_matrix_vector_multiplicaiton(a, b, method='fft'):
+    m = (a.shape[-1] - 1)//2
+    
+    if method == 'fft':
+        assert m == b.shape[-1] - 1
+        a_neg = a[...,:m].flip(-1)
+        a_pos = a[...,m+1:].flip(-1)
+        a_ = torch.concat([a[...,[m]], a_neg, a[...,[m]], a_pos], axis=-1)
+        b_ = torch.concat([b, torch.zeros_like(b)], axis=-1)
+        a_ft = torch.fft.rfft(a_)
+        b_ft = torch.fft.rfft(b_)
+        return torch.fft.irfft(a_ft*b_ft)[...,:m+1]
+    elif method == 'conv':        
+        return torch.nn.functional.conv1d(b, a, padding=m)
+
+
 def injection2d(Khh):
     KhH = torch.cat([Khh[...,[0]], Khh[...,1:-1][...,1::2], Khh[...,[-1]]], axis=-1)
     KHH = torch.cat([KhH[...,[0],:], KhH[...,1:-1,:][...,1::2,:], KhH[...,[-1],:]], axis=-2)
