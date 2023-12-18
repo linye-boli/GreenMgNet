@@ -1,6 +1,2 @@
 /__pycache__
-/cfgs/data_log-*.yaml
-/cfgs/data_log-cfg_.yaml/scripts/test.sh
-/dataset
-/scripts/test.sh
-/logs/*/*/*/*.pth
+/results/*/*/*.pth
