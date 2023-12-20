@@ -1,6 +1,8 @@
 import torch 
 import torch.nn.functional as F 
+from siren_pytorch import Sine
 import torch.nn as nn
+from utils import toeplitz_matrix_vector_multiplicaiton, injection1d, interp1d
 
 ################################################################
 #  1d fourier layer
@@ -63,7 +65,6 @@ class MLP(torch.nn.Module):
 
     def forward(self, x):
         
-
         for _, l in enumerate(self.layers):
             x = l(x)
 
@@ -97,50 +98,63 @@ class Rational(torch.nn.Module):
         output = torch.div(PQ[..., 0], PQ[..., 1])
         return output
 
-# class MLP(nn.Module):
-#     def __init__(self, in_channels, out_channels, mid_channels):
-#         super(MLP, self).__init__()
-#         self.mlp1 = nn.Conv1d(in_channels, mid_channels, 1)
-#         self.mlp2 = nn.Conv1d(mid_channels, out_channels, 1)
+class Gauss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.s = nn.Parameter(torch.ones(1))
+        self.mu = nn.Parameter(torch.zeros(1))
+        self.sigma = nn.Parameter(torch.ones(1))
+        
+    def forward(self, input):
+        output = self.s * torch.exp(-(input - self.mu)**2 / (2*self.sigma**2))
+        return output
 
-#     def forward(self, x):
-#         x = self.mlp1(x)
-#         x = F.gelu(x)
-#         x = self.mlp2(x)
-#         return x
-    
-class MLNO(nn.Module):
-    def __init__(self, in_channels, out_channels, k, m, modes):
-        super(MLNO, self).__init__()
+class ToepGreenMgNet(nn.Module):
+    def __init__(self, in_channels, out_channels, lc):
+        super(ToepGreenMgNet, self).__init__()
 
         self.in_channels = in_channels
         self.out_channels = out_channels 
-        self.modes = modes 
-        self.k = k 
-        self.m = m 
-
-        self.K_smooth = MLP([1,50,50,50,50,1], Rational)
-        self.K_corrs = nn.ModuleList([
-            nn.Conv1d(in_channels, out_channels, kernel_size=2*m+1, padding=m, bias=False) for _ in range(k)])
-        self.K_diag = nn.Conv1d(in_channels, out_channels, kernel_size=1, bias=False)
+        self.lc = lc
+        self.kernels = nn.ModuleList([MLP([in_channels,64,64,out_channels], nn.Tanh) for _ in range(lc)])
     
+    def kernel_approximation(self, x):
+        for i in range(self.lc):
+            x = injection1d(x)
+
+        n = x.shape[-1]        
+        for j in range(self.lc):
+            if j == 0:
+                a = self.kernels[j](x)
+                n_ = (n-1) // 4
+            else:
+                kernel_band = self.kernels[j](x)
+                a[:,:,n_:n_+n] = kernel_band
+                n_ = n_*2
+            
+            a = interp1d(a)
+        return a 
+
     def forward(self, u, x):
+        a = self.kernel_approximation(x)
+        w = toeplitz_matrix_vector_multiplicaiton(a, u)
 
-        # us = []
-        # for i in range(self.k):
-        #     us.append(u)
-        #     u = F.interpolate(u, scale_factor=0.5)
-        #     x = F.interpolate(x, scale_factor=0.5)
-        
-        # us = us[::-1]
-        K = self.K_smooth(x)
-        K_fft = torch.fft.rfft(K)
-        u_fft = torch.fft.rfft(u)
-        w = torch.fft.irfft(K_fft * u_fft)
+        return w 
 
-        # for i in range(self.k):
-        #     w = F.interpolate(w, scale_factor=2) + self.K_corrs[i](us[i])
-        #     if i == self.k - 1:
-        #         w += self.K_diag(us[i])
+class ToepGreenNet(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(ToepGreenNet, self).__init__()
+
+        self.in_channels = in_channels
+        self.out_channels = out_channels 
+        self.kernel = MLP([in_channels,50,50,50,50,out_channels], Rational)
+    
+    def kernel_approximation(self, x):
+        a = self.kernel(x)
+        return a 
+
+    def forward(self, u, x):
+        a = self.kernel_approximation(x)
+        w = toeplitz_matrix_vector_multiplicaiton(a, u)
 
         return w 

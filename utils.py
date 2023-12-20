@@ -5,6 +5,12 @@ import torch.nn.functional as F
 from einops import rearrange, repeat
 import pandas as pd
 
+def circulant_matrix_vector_multiplication(a, b):
+    a = torch.flip(a, [-1])
+    a_ft = torch.fft.rfft(a)
+    b_ft = torch.fft.rfft(b)
+    return torch.fft.irfft(a_ft*b_ft)
+
 def toeplitz_matrix_vector_multiplicaiton(a, b, method='fft'):
     m = (a.shape[-1] - 1)//2
     
@@ -16,10 +22,10 @@ def toeplitz_matrix_vector_multiplicaiton(a, b, method='fft'):
         b_ = torch.concat([b, torch.zeros_like(b)], axis=-1)
         a_ft = torch.fft.rfft(a_)
         b_ft = torch.fft.rfft(b_)
+
         return torch.fft.irfft(a_ft*b_ft)[...,:m+1]
     elif method == 'conv':        
         return torch.nn.functional.conv1d(b, a, padding=m)
-
 
 def injection2d(Khh):
     KhH = torch.cat([Khh[...,[0]], Khh[...,1:-1][...,1::2], Khh[...,[-1]]], axis=-1)
