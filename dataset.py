@@ -3,6 +3,7 @@ import scipy
 import torch 
 import numpy as np
 from einops import rearrange, repeat
+import numpy as np
 
 def load_dataset_1d(task_nm, data_root, ntrain=1000, ntest=500, bsz=64, normalize=True, odd=True):
 
@@ -15,14 +16,16 @@ def load_dataset_1d(task_nm, data_root, ntrain=1000, ntest=500, bsz=64, normaliz
     us = rearrange(F, 'n b -> b 1 n')
     ws = rearrange(U, 'n b-> b 1 n')
 
-    # import pdb 
-    # pdb.set_trace()
+    if raw_data['U_hom'].sum() == 0:
+        s = ws.max()
+        ws = ws/s
+        us = us/s
 
     if normalize:
         u_mean, u_std = us.mean(), us.std()
         us = (us - u_mean) / u_std
         w_mean, w_std = ws.mean(), ws.std()
-        ws = (ws - w_mean) / w_std    
+        ws = (ws - w_mean) / w_std
 
     us = torch.tensor(us).float()
     ws = torch.tensor(ws).float()
