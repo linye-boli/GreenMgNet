@@ -1,4 +1,4 @@
-res=513
+res=1025
 ep=1500
 
 for s in 0 2 4
