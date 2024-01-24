@@ -10,7 +10,7 @@ do
 
         for act in relu 
         do
-            for h in 64 
+            for h in 128 
             do
                 
                 # baseline gl 

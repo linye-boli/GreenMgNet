@@ -3,14 +3,14 @@ ep=1500
 
 for s in 1 3
 do
-    for task in schrodinger laplace
+    for task in schrodinger laplace 
     do
         # baseline fno
-        python fourier_1d.py --device 1 --task $task --seed $s --lr_adam 1e-3 --ep_adam 500 --sch --res 2049
+        python fourier_1d.py --device 1 --task $task --seed $s --lr_adam 1e-3 --ep_adam 500 --sch --res $res
 
         for act in relu
         do
-            for h in 64
+            for h in 128
             do
                 
                 # baseline gl 
