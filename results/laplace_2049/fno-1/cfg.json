@@ -1,0 +1,1 @@
+{"device": 0, "task": "laplace", "res": 2049, "model": "fno", "seed": 1, "lr_adam": 0.001, "ep_adam": 500, "sch": true}

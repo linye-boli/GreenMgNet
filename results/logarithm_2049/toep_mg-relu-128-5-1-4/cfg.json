@@ -1,0 +1,1 @@
+{"device": 0, "task": "logarithm", "res": 2049, "model": "toep_mg", "act": "relu", "seed": 4, "lr_adam": 0.001, "ep_adam": 2500, "sch": true, "k": 5, "m": 1, "r": 1, "h": 128}

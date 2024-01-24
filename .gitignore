@@ -1,0 +1,4 @@
+/__pycache__
+/results/*/*/model.pth
+/results/*/*/approx_kernel.npy
+/notebooks/*
