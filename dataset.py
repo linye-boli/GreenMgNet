@@ -4,19 +4,37 @@ import torch
 import numpy as np
 from einops import rearrange, repeat
 import numpy as np
+import h5py
 
 def load_dataset_1d(task_nm, data_root, ntrain=1000, ntest=200, bsz=64, normalize=True, odd=True):
 
     data_path = os.path.join(data_root, task_nm+'.mat')
-    raw_data = scipy.io.loadmat(data_path)
+    try:
+        raw_data = scipy.io.loadmat(data_path)
+        F = raw_data['F']
+        U = raw_data['U']
+        U_hom = raw_data['U_hom']
+        U = U-U_hom
+    except:
+        raw_data = h5py.File(data_path)
 
-    F = raw_data['F']
-    U = raw_data['U'] - raw_data['U_hom']
+        F = raw_data['F'][()]
+        F = np.transpose(F, axes=range(len(F.shape) - 1, -1, -1))
+
+        U = raw_data['U'][()]
+        U = np.transpose(U, axes=range(len(U.shape) - 1, -1, -1))
+        
+        U_hom = raw_data['U_hom'][()]
+        U_hom = np.transpose(U_hom, axes=range(len(U_hom.shape) - 1, -1, -1))
+
+        U = U - U_hom
+    # F = raw_data['F']
+    # U = raw_data['U'] - raw_data['U_hom']
         
     us = rearrange(F, 'n b -> b 1 n')
     ws = rearrange(U, 'n b-> b 1 n')
 
-    if raw_data['U_hom'].sum() == 0:
+    if U_hom.sum() == 0:
         s = ws.max()
         ws = ws/s
         us = us/s
