@@ -163,9 +163,15 @@ def fullml_matrix_vector_multiplication(uh, Khh, h, k=3, m=7):
     
     return wh
 
-def fourier_integral_transform(a, b):
-    m = (a.shape[-1] - 1)//2
-
+def fourier_integral_transform(a, f):
+    l = (a.shape[-1] - 1)//2
+    assert l == f.shape[-1] - 1
+    f_ = torch.zeros_like(a)
+    f_[:l,:l] += f
+    A = torch.fft.rfft2(a, s=(2*l,2*l))
+    F = torch.fft.rfft2(f_, s=(2*l,2*l))
+    u = torch.fft.irfft2(A*F)[l-1:-1,l-1:-1]
+    return u 
 
 # injections 
 def injection2d(Khh):
