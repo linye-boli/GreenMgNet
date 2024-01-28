@@ -1,0 +1,1 @@
+{"device": 0, "task": "laplace", "res": 513, "model": "dd_mg", "act": "relu", "seed": 4, "lr_adam": 0.001, "ep_adam": 1500, "sch": true, "k": 5, "m": 15, "r": 1, "h": 128}
