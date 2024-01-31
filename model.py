@@ -307,6 +307,7 @@ class GMGN(nn.Module):
         return kernels, xs, idx_interval, nbrs, mask_lst
 
     def dd_kernel_approximation(self, x):
+
         Kmg = self.kernels['kernel'](self.xs)
         Kmg = rearrange(Kmg, 'n c l -> l c n', c=1, l=1)
 
