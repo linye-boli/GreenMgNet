@@ -4,7 +4,6 @@ This file is the Fourier Neural Operator for 1D problem such as the (time-indepe
 """
 
 import sys 
-sys.path.append('../../')
 import argparse
 import torch.nn.functional as F
 from timeit import default_timer

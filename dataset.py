@@ -77,9 +77,9 @@ def load_dataset_2d(task_nm, data_root, ntrain=1000, ntest=200, bsz=64, normaliz
         
     if normalize:
         u_mean, u_std = us.mean(), us.std()
-        us = (us - u_mean) / u_std
+        us = (us - u_mean) / (u_std + 1e-5)
         w_mean, w_std = ws.mean(), ws.std()
-        ws = (ws - w_mean) / w_std
+        ws = (ws - w_mean) / (w_std + 1e-5)
     else:
         s = ws.max()
         ws = ws/s
