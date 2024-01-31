@@ -15,7 +15,6 @@ from model import GMGN2d, GL2d
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
-
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
