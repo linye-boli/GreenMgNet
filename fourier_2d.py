@@ -230,8 +230,8 @@ if __name__ == '__main__':
 
     train_rl2_hist = []
     test_rl2_hist = []
-    train_rl2 = 1
-    test_rl2_best = 1
+    train_rl2 = 5
+    test_rl2_best = 5
 
     pbar = trange(epochs)
     for ep in pbar:
