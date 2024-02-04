@@ -1,0 +1,1 @@
+{"device": 0, "task": "invdist", "res": 257, "model": "toep_mg", "act": "relu", "seed": 2, "lr_adam": 0.001, "ep_adam": 1500, "sch": true, "k": 7, "m": 0, "r": 1, "h": 128}
