@@ -4,18 +4,19 @@ from siren_pytorch import Sine
 import torch.nn as nn
 import numpy as np
 from einops import repeat, rearrange
-from utils import (
+
+from kint import (
     toeplitz_matrix_vector_multiplication, 
     lowrank_matrix_vector_multiplication,
     ml_matrix_vector_multiplication,
     fullml_matrix_vector_multiplication,
     full_matrix_vector_multiplication,
-    fourier_integral_transform,
+    fourier_integral_transform)
+
+from ops import (
     injection1d, injection1d_cols, injection1d_rows,
     interp1d, interp2d, interp1d_rows, interp1d_cols,
-    gauss_smooth1d, gauss_smooth2d,
     fetch_nbrs)
-import kornia
 
 # A simple feedforward neural network
 class MLP(torch.nn.Module):

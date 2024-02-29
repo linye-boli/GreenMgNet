@@ -2,7 +2,7 @@ import os
 import numpy as np
 import torch 
 import torch.nn.functional as F
-from einops import rearrange, repeat
+from einops import rearrange
 import pandas as pd
 import random 
 import kornia

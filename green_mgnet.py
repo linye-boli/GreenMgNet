@@ -4,13 +4,11 @@ import torch
 import argparse 
 import torch.nn.functional as F 
 from dataset import load_dataset_1d 
-from datetime import datetime 
 from utils import (
-    rl2_error, init_records, save_hist, get_seed,
+    init_records, save_hist, get_seed,
     train_model, eval_model)
 import json 
 from tqdm import trange 
-from einops import rearrange 
 from model import GMGN, GL
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
