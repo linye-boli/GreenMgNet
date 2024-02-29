@@ -245,7 +245,7 @@ class GMGN(nn.Module):
             
             idx_i_lst.append(idx_i)
             idx_j_lst.append(idx_j)
-            mask_lst.append(idx_mask)            
+            mask_lst.append(idx_mask) 
 
             # extract band idx
             idx_band = idx_hh[idx_i, idx_j]
@@ -433,7 +433,6 @@ class GMGN(nn.Module):
 
         return w
 
-
 class GMGN2d(nn.Module):
     def __init__(self, in_channels, out_channels, hidden_channels, n, k, m, r, act, mtype='toep_mg'):
         super(GMGN2d, self).__init__()
@@ -582,7 +581,6 @@ class GMGN2d(nn.Module):
             w = ml_matrix_vector_multiplication(Ks, u, self.nbrs[1], self.masks, h, k=self.k)
 
         return w
-
 
 class GL(nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels, n, r, act='rational', mtype='toep_gl'):
