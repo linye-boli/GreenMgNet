@@ -165,3 +165,4 @@ def multi_summation(K, u, h):
     # u : (batch, c, n)
     # h : float scalar
     return h * torch.einsum('bcmn, bcn-> bcm', K, u)
+

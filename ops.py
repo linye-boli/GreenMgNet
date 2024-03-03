@@ -186,3 +186,84 @@ def fetch_nbrs(n, m):
     idx_i = repeat(idx_h, 'i -> i m', m=2*m+1)
 
     return idx_i, idx_j
+
+# ------------------- 2D case ---------------------
+
+def coord2idx2d(coord_xy, n):
+    coord_x = coord_xy[...,[-2]]
+    coord_y = coord_xy[...,[-1]]
+    return coord_x * n + coord_y
+
+def coord2idx4d(coord_ij, n):
+    coord_i = coord2idx2d(coord_ij[...,-4:-2], n)
+    coord_j = coord2idx2d(coord_ij[...,-2:], n)
+    return coord2idx2d(torch.cat([coord_i, coord_j], axis=-1), n*n)
+
+
+def grid2d_coords(nh):
+    xh = torch.linspace(-1,1,nh)
+    idx_ix = torch.arange(nh)
+    x_i = torch.cartesian_prod(xh, xh)                               # values : nh^2 x 2
+    coords_i = torch.cartesian_prod(idx_ix, idx_ix)                  # coords : nh^2 x 2
+    return x_i, coords_i
+
+def grid4d_coords(nh):
+    x_i, coords_i = grid2d_coords(nh)
+    idx_i = coord2idx2d(coords_i, n=nh)            # index : nh^2 x 1
+    # fine grid pts pairs           
+    idx_ij = torch.cartesian_prod(idx_i.reshape(-1), idx_i.reshape(-1))                      # fine kernel index pairs: nh^2 x 1
+    x_ij = torch.cat([x_i[idx_ij[:,0]], x_i[idx_ij[:,1]]], axis=1)
+    coords_ij = torch.cat([coords_i[idx_ij[:,0]], coords_i[idx_ij[:,1]]], axis=1)
+    return x_ij, coords_ij
+
+def cat2d_nbr_coords(coords_i, coords_j):
+    n, m, d = coords_j.shape 
+    coords_i = repeat(coords_i, 'n d -> n m d', m=m)
+    return torch.cat([coords_i, coords_j], axis=-1)
+
+
+def fetch_nbrs2d(coords, mx1=2, mx2=2, my1=2, my2=2):
+    n, d = coords.shape
+    
+    coords_nbrs_lst = []
+    coords_max = coords.max()
+
+    for i in range(-mx1, mx2+1):
+        for j in range(-my1, my2+1):
+            coords_nbr = coords.clone()
+            coords_nbr[:,-2:-1] += i
+            coords_nbr[:,-1:] += j            
+
+            coords_nbr[coords_nbr < 0] = 0
+            coords_nbr[coords_nbr > coords_max] = coords_max
+
+            coords_nbrs_lst.append(coords_nbr)
+
+    # return coords_nbrs_lst
+    return torch.cat(coords_nbrs_lst, axis=1).reshape(n, (mx1+mx2+1) * (my1+my2+1), d)
+
+# def fetch_nbrs2d(coords, mx1=2, mx2=2, my1=2, my2=2):
+#     coords_nbrs_lst = []
+#     coords_max = coords.max()
+
+#     for i in range(-mx1, mx2+1):
+#         for j in range(-my1, my2+1):
+#             coords_nbr = coords.clone()
+#             coords_nbr[:,-2:-1] += i
+#             coords_nbr[:,-1:] += j            
+
+#             coords_nbr[coords_nbr < 0] = 0
+#             coords_nbr[coords_nbr > coords_max] = coords_max
+
+#             coords_nbrs_lst.append(coords_nbr)
+
+#     return torch.cat(coords_nbrs_lst, axis=1).reshape(-1, mx1+mx2+1, my1+my2+1,2)
+    # nbr_coords = torch.concat(nbr_lst, axis=1)
+    # return nbr_coords
+
+    # nbrs_coords = torch.concat(nbr_lst, axis=1).reshape(nx*ny,-1,2)
+    # nbrs_idx_i = coord2idx(nbrs_coords[:,:,0], nbrs_coords[:,:,1], n=nh).reshape(-1,1)
+    # nbrs_idx_j = torch.arange(nh*nh).repeat(1,(mx1+mx2+1)*(my1+my2+1)).reshape((mx1+mx2+1)*(my1+my2+1), nh*nh).T.reshape(-1,1)
+    # nbrs_idx = coord2idx(nbrs_idx_i, nbrs_idx_j, n=nh*nh)
+
+    # return nbrs_idx
