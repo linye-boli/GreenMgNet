@@ -199,7 +199,6 @@ def coord2idx4d(coord_ij, n):
     coord_j = coord2idx2d(coord_ij[...,-2:], n)
     return coord2idx2d(torch.cat([coord_i, coord_j], axis=-1), n*n)
 
-
 def grid2d_coords(nh):
     xh = torch.linspace(-1,1,nh)
     idx_ix = torch.arange(nh)
@@ -217,8 +216,8 @@ def grid4d_coords(nh):
     return x_ij, coords_ij
 
 def cat2d_nbr_coords(coords_i, coords_j):
-    n, m, d = coords_j.shape 
-    coords_i = repeat(coords_i, 'n d -> n m d', m=m)
+    n, m1, m2, d = coords_j.shape 
+    coords_i = repeat(coords_i, 'n d -> n m1 m2 d', m1=m1, m2=m2)
     return torch.cat([coords_i, coords_j], axis=-1)
 
 
@@ -240,7 +239,7 @@ def fetch_nbrs2d(coords, mx1=2, mx2=2, my1=2, my2=2):
             coords_nbrs_lst.append(coords_nbr)
 
     # return coords_nbrs_lst
-    return torch.cat(coords_nbrs_lst, axis=1).reshape(n, (mx1+mx2+1) * (my1+my2+1), d)
+    return torch.cat(coords_nbrs_lst, axis=1).reshape(n, mx1+mx2+1, my1+my2+1, d)
 
 # def fetch_nbrs2d(coords, mx1=2, mx2=2, my1=2, my2=2):
 #     coords_nbrs_lst = []
