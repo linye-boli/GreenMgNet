@@ -6,7 +6,7 @@ from ops import cat2d_nbr_coords, cat1d_nbr_coords
 from ops import coord2idx2d, coord2idx4d 
 from ops import interp1d, interp2d, interp1d_cols, interp1d_rows
 from ops import restrict1d, restrict2d
-from ops import injection1d
+from ops import injection1d, injection2d
 
 # 1D MLMM algorithm
 
@@ -78,10 +78,6 @@ class Grid1D:
         
         # coords_i_xeven_yeven_j : i=(2X+1,2Y), j=(x',y')
         coords_i_odd_j = (coords_2Ij[:-1] + coords_2Ij[1:])//2
-
-        # idx_2Ij = coord2idx2d(coords_2Ij, self.nh)
-        # idx_2I_j_odd = coord2idx2d(coords_2I_j_odd, self.nh)      
-        # idx_i_odd_j = coord2idx2d(coords_i_odd_j, self.nh)
 
         # idx_2Ij = coords_2Ij
         idx_2I_j_odd = coords_2I_j_odd      
@@ -267,7 +263,7 @@ class MLMM1D:
 # 2D MLMM algorithm
 
 class Grid2D:
-    def __init__(self, nh, m):
+    def __init__(self, nh, m, device):
         '''
         nh : number of nodes on each axis
         m : neighbor radius for a nodes on each axis
@@ -276,10 +272,11 @@ class Grid2D:
         '''
         self.m = m
         self.nh = nh
-        self.init_grid_h()
-        self.fetch_nbrs()
         self.h = 2/(self.nh-1)
         self.hh = self.h**2
+        self.device = device
+        self.init_grid_h()
+        self.fetch_nbrs()
     
     def init_grid_h(self):
         '''
@@ -288,8 +285,8 @@ class Grid2D:
         coords_h : index coordinates (nh^2) x 2
         '''
         x_h, coords_h = grid2d_coords(self.nh)
-        self.x_h = x_h 
-        self.coords_h = coords_h
+        self.x_h = x_h.to(self.device)
+        self.coords_h = coords_h.to(self.device)
     
     def init_grid_hh(self):
         '''
@@ -298,8 +295,8 @@ class Grid2D:
         coords_h : index coordinates (nh^4) x 4
         '''
         x_hh, coords_hh = grid4d_coords(self.nh)
-        self.x_hh = x_hh 
-        self.coords_hh = coords_hh
+        self.x_hh = x_hh.to(self.device) 
+        self.coords_hh = coords_hh.to(self.device)
     
     def fetch_nbrs(self):
 
@@ -335,14 +332,14 @@ class Grid2D:
         #   FINE grid i=2I=(2X,2Y), j=(2X',2Y')
         coords_2I2J = self.ij_coords * 2
         # coords_2I_j_xeven_yfull: i=(2X,2Y), j=(2X',y')
-        coords_2I_j_xeven_yfull = interp1d_cols(coords_2I2J.permute(0,3,1,2)).permute(0,2,3,1).int()
+        coords_2I_j_xeven_yfull = interp1d_cols(coords_2I2J.float().permute(0,3,1,2)).permute(0,2,3,1).int()
         # coords_2I_j_xeven_yodd: i=(2X,2Y), j=(2X',2Y'+1)
         coords_2I_j_xeven_yodd = coords_2I_j_xeven_yfull[:,:,1::2]
         # coords_2I_j_xodd_yfull: i=(2X,2Y), j=(2X'+1,y')
         coords_2I_j_xodd_yfull = (coords_2I_j_xeven_yfull[:,:-1] + coords_2I_j_xeven_yfull[:,1:])//2
 
         # coords_i_xeven_yeven_j : i=(2X,2Y), j=(x',y')
-        coords_i_xeven_yeven_j = interp2d(coords_2I2J.permute(0,3,1,2)).permute(0,2,3,1).int()
+        coords_i_xeven_yeven_j = interp2d(coords_2I2J.float().permute(0,3,1,2)).permute(0,2,3,1).int()
         coords_i_xeven_yeven_j = rearrange(
             coords_i_xeven_yeven_j, '(m n) x y c -> m n x y c', m=nH,n=nH)
         
@@ -384,7 +381,248 @@ class Grid2D:
         x_2Ij = interp2d(x_2I2J.permute(0,3,1,2)).permute(0,2,3,1)
         x_2Ij = rearrange(x_2Ij, '(m n) x y c-> m n x y c', m=nH, n=nH)
 
-        return x_2Ij
+        # x_2I_j_xeven_yodd: i=(2X,2Y), j=(2X',2Y'+1)
+        x_2I_j_xeven_yodd = x_2Ij[:,:,::2,1::2]
+        # x_2I_j_xeven_yodd: i=(2X,2Y), j=(2X',y')
+        x_2I_j_xodd_yfull = x_2Ij[:,:,1::2]
+
+        # x_i_xodd_yeven_j: i=(2X+1,2Y), j=(x',y')
+        x_i_xodd_yeven_j = (x_2Ij[:-1] + x_2Ij[1:])/2
+        # x_i_xeven_yodd_j: i=(2X,2Y+1), j=(x',y')
+        x_i_xeven_yodd_j = (x_2Ij[:,:-1] + x_2Ij[:,1:])/2
+        # x_i_xodd_yodd_j: i=(2X+1,2Y+1), j=(x',y')
+        x_i_xodd_yodd_j = (x_i_xeven_yodd_j[:-1] + x_i_xeven_yodd_j[1:])/2
+
+        return [x_2I_j_xeven_yodd, x_2I_j_xodd_yfull], [x_i_xodd_yeven_j, x_i_xeven_yodd_j, x_i_xodd_yodd_j]
+
+class MLMM2D:
+    def __init__(self, n, m, k, device):
+        '''
+        n : total level
+        m : neighbor radius for a nodes on each axis
+        k : coarse level
+        '''
+        self.n = n 
+        self.m = m 
+        self.k = k
+        self.device = device
+        self.build_ml_grids()
+        self.fetch_eval_pts()
+    
+    def build_ml_grids(self):
+        '''
+        build multi-level grids
+        '''
+        ml_grids = []
+        for l in range(self.k+1):
+            nh = 2**(self.n-l)+1
+            ml_grids.append(Grid2D(nh, self.m, self.device))
+
+            if l == 0:
+                nfinest = nh
+            if l == self.k:
+                ncoarest = nh
+                if nfinest ** 0.5 > ncoarest:
+                    print("finest grid : {:}".format(nfinest))
+                    print("coarest grid : {:}".format(ncoarest))
+                    print('too coarse warning')
+
+        self.ml_grids = ml_grids
+    
+    def fetch_eval_pts(self):
+        '''
+        fetch coarest grid pts and neighbor pts on each grids
+        '''
+        # coarest grid
+        self.ml_grids[-1].init_grid_hh()
+        self.coarest_pts = self.ml_grids[-1].x_hh.reshape(-1,4)
+
+        # local pts
+        local_pts = []
+        local_idx = []
+
+        for l in range(self.k+1):
+            x_corr_even, x_corr_odd = self.ml_grids[-1-l].fetch_K_local_x()
+            idx_corr_even, idx_corr_odd = self.ml_grids[-1-l].fetch_local_idx()
+            local_pts.append([x_corr_even, x_corr_odd])
+            local_idx.append([idx_corr_even, idx_corr_odd])
+
+        self.local_pts = local_pts
+        self.local_idx = local_idx
+    
+    def restrict_ml_f(self, f_h):
+        '''
+        restrict f into multi-level
+        '''
+        ml_f = [f_h]
+        for _ in range(self.k):
+            f_h = restrict2d(f_h)
+            ml_f.append(f_h)
+        self.ml_f = ml_f
+    
+    def eval_ml_K(self, kernel_func):
+        '''
+        evaluate Kernel function on coarest grid and local pts on each grids
+        '''
+        # coarse grid 
+        K_HH = kernel_func(self.coarest_pts)
+        self.K_HH = K_HH
+
+        # local pts
+        K_locals = []
+        for l in range(self.k+1):
+            x_2I_j_xeven_yodd, x_2I_j_xodd_yfull = self.local_pts[l][0]
+            x_i_xodd_yeven_j, x_i_xeven_yodd_j, x_i_xodd_yodd_j = self.local_pts[l][1]
+
+            mx, my, nx, ny, _ = x_2I_j_xeven_yodd.shape
+            K_2I_j_xeven_yodd = kernel_func(
+                x_2I_j_xeven_yodd.reshape(-1,4)).reshape(mx, my, nx, ny)
+            
+            mx, my, nx, ny, _ = x_2I_j_xodd_yfull.shape
+            K_2I_j_xodd_yfull = kernel_func(
+                x_2I_j_xodd_yfull.reshape(-1,4)).reshape(mx, my, nx, ny)
+            
+            mx, my, nx, ny, _ = x_i_xodd_yeven_j.shape
+            K_i_xodd_yeven_j = kernel_func(
+                x_i_xodd_yeven_j.reshape(-1,4)).reshape(mx, my, nx, ny)
+            
+            mx, my, nx, ny, _ = x_i_xeven_yodd_j.shape
+            K_i_xeven_yodd_j = kernel_func(
+                x_i_xeven_yodd_j.reshape(-1,4)).reshape(mx, my, nx, ny)
+            
+            mx, my, nx, ny, _ = x_i_xodd_yodd_j.shape
+            K_i_xodd_yodd_j = kernel_func(
+                x_i_xodd_yodd_j.reshape(-1,4)).reshape(mx, my, nx, ny)
+            
+            K_local_even = [K_2I_j_xeven_yodd, K_2I_j_xodd_yfull]
+            K_local_odd = [K_i_xodd_yeven_j, K_i_xeven_yodd_j, K_i_xodd_yodd_j]
+
+            K_locals.append([K_local_even, K_local_odd]) 
+        
+        self.K_locals = K_locals
+    
+    def coarest_full_kint(self):
+        '''
+        kernel integral on coarest level by dense matrix-vector product
+        '''
+        
+        nH = self.ml_grids[-1].nh
+        HH = self.ml_grids[-1].hh 
+        KHH = self.K_HH.reshape(nH*nH, nH*nH)
+        fH = self.ml_f[-1].reshape(-1,nH*nH).T
+        uH = HH * (KHH @ fH).T
+        uH = uH.reshape(-1,nH,nH)        
+        return uH
+
+    def local_interp_K(self, K_2I2J, K_2Ij):
+        '''
+        local interpolation of local K
+        K_2I2J: nH x nH x (2m+1) x (2m+1), coarse nodes and their COARSE neighbors
+        K_2Ij: nH x nH x (4m+1) x (4m+1), coarse nodes and their FINE neighbors
+        '''
+
+        nH = K_2I2J.shape[0]
+        
+        # Kernel values for i=(2X,2Y), j=(2X',2Y')
+        K_2I2J = rearrange(K_2I2J, 'm n x y -> (m n) x y 1')
+        # Kernel values for i=(2X,2Y), j=(2X',y')
+        K_2I_j_xeven_yfull_ = interp1d_cols(K_2I2J.permute(0,3,1,2)).permute(0,2,3,1) 
+        # Kernel values for i=(2X,2Y), j=(2X',2Y'+1)
+        K_2I_j_xeven_yodd_ = K_2I_j_xeven_yfull_[:,:,1::2] 
+        # Kernel values for i=(2X,2Y), j=(2X'+1,y')
+        K_2I_j_xodd_yfull_ = (K_2I_j_xeven_yfull_[:,:-1] + K_2I_j_xeven_yfull_[:,1:])/2 
+        
+        # Kernel values for i=(2X,2Y), j=(x',y')
+        K_i_xeven_yeven_j = K_2Ij
+        # Kernel values for i=(2X,2Y), j=(x',y')
+        K_i_xodd_yeven_j_ = (K_i_xeven_yeven_j[:-1] + K_i_xeven_yeven_j[1:])/2
+        # Kernel values for i=(2X,2Y), j=(x',y')
+        K_i_xeven_yodd_j_ = (K_i_xeven_yeven_j[:,:-1] + K_i_xeven_yeven_j[:,1:])/2
+        # Kernel values for i=(2X,2Y), j=(x',y')
+        K_i_xodd_yodd_j_ = (K_i_xeven_yodd_j_[:-1] + K_i_xeven_yodd_j_[1:])/2
+
+        # reshape
+        K_2I_j_xeven_yodd_ = K_2I_j_xeven_yodd_.reshape(-1)
+        K_2I_j_xodd_yfull_ = K_2I_j_xodd_yfull_.reshape(-1)
+        K_i_xodd_yeven_j_ = K_i_xodd_yeven_j_.reshape(-1)
+        K_i_xeven_yodd_j_ = K_i_xeven_yodd_j_.reshape(-1)
+        K_i_xodd_yodd_j_ = K_i_xodd_yodd_j_.reshape(-1)
+
+        K_local_even = torch.concat([K_2I_j_xeven_yodd_, K_2I_j_xodd_yfull_], axis=0)
+        K_local_odd = torch.concat([K_i_xodd_yeven_j_, K_i_xeven_yodd_j_, K_i_xodd_yodd_j_], axis=0)
+        
+        return K_local_even, K_local_odd
+    
+    def local_assemble_K(self, K_IJ, K_local_even, K_local_odd):
+        nH, _, M, _ = K_IJ.shape
+        K_ij = torch.zeros(2*nH-1, 2*nH-1, 2*M-1, 2*M-1).to(K_IJ)
+
+        K_2I_j_xeven_yodd, K_2I_j_xodd_yfull = K_local_even
+        K_i_xodd_yeven_j, K_i_xeven_yodd_j, K_i_xodd_yodd_j = K_local_odd
+
+        K_ij[::2,::2,::2,::2] += K_IJ
+        K_ij[::2,::2,::2,1::2] += K_2I_j_xeven_yodd
+        K_ij[::2,::2,1::2,:] += K_2I_j_xodd_yfull
+        K_ij[1::2,::2] += K_i_xodd_yeven_j
+        K_ij[::2,1::2] += K_i_xeven_yodd_j
+        K_ij[1::2,1::2] += K_i_xodd_yodd_j
+
+        return K_ij
+    
+    def ml_kint(self):
+        u_h = self.coarest_full_kint()
+        nH = self.ml_grids[-1].nh 
+        K_IJ = self.K_HH[self.ml_grids[-1].ij_idx]
+        K_IJ = K_IJ.reshape(nH,nH,2*self.m+1,2*self.m+1)
+
+        for l in range(1, self.k+1):
+            nh = self.ml_grids[-1-l].nh
+            hh = self.ml_grids[-1-l].hh
+            f_h = self.ml_f[-1-l].reshape(-1,nh*nh).T
+
+            # local evaluation and assemblation
+            K_local_even, K_local_odd = self.K_locals[l-1]
+            idx_corr_even, idx_corr_odd = self.local_idx[l-1]
+            K_ij = self.local_assemble_K(K_IJ, K_local_even, K_local_odd)
+            K_2Ij = K_ij[::2,::2]
+
+            # local kernel interpolation
+            K_local_even_, K_local_odd_ = self.local_interp_K(K_IJ, K_2Ij)
+
+            # calculate difference
+            K_local_even = torch.cat([k.reshape(-1) for k in K_local_even], axis=0)
+            K_local_odd = torch.cat([k.reshape(-1) for k in K_local_odd], axis=0)
+            K_corr_even = K_local_even - K_local_even_
+            K_corr_odd = K_local_odd - K_local_odd_
+
+            # correct even
+            K_corr_even_sparse = torch.sparse_coo_tensor(idx_corr_even, K_corr_even,(nh**2,nh**2))
+            u_corr_ = torch.sparse.mm(K_corr_even_sparse, f_h).T.reshape(-1,nh,nh)
+            u_corr_ = hh * injection2d(u_corr_[:,None])[:,0]
+            u_h_ = u_h + u_corr_
+            u_h_ = interp2d(u_h_[:,None])[:,0]
+
+            # correct odd 
+            K_corr_odd_sparse = torch.sparse_coo_tensor(idx_corr_odd, K_corr_odd,(nh**2,nh**2))
+            u_corr_ = hh*torch.sparse.mm(K_corr_odd_sparse, f_h).T.reshape(-1,nh,nh)
+            u_h_ = u_h_ + u_corr_
+            
+            # get new K_IJ, u_h
+            K_IJ = K_ij[:,:,self.m:-self.m,self.m:-self.m]
+            u_h = u_h_
+
+        return u_h
+
+    def ml_kint_wo(self):
+        u_h = self.coarest_full_kint()
+        nH = self.ml_grids[-1].nh 
+        K_IJ = self.K_HH[self.ml_grids[-1].ij_idx]
+        K_IJ = K_IJ.reshape(nH,nH,2*self.m+1,2*self.m+1)
+
+        for l in range(1, self.k+1):
+            u_h = interp2d(u_h[:,None])[:,0]
+        return u_h
+
 
 def K_local_interp_4D(K_2I2J, K_2Ij):
     '''
@@ -505,7 +743,8 @@ def kernel_func_2D(pts_pairs):
 def ffunc_2D(pts):
     x = pts[:,0]
     y = pts[:,1]
-    u = (1 - (x**2+y**2))**-0.5    
+    u = (1 - (x**2+y**2))**-0.5
+    u = torch.nan_to_num(u, posinf=0)
     return u
 
 def ffunc_1D(pts):
