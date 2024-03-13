@@ -743,7 +743,7 @@ def kernel_func_2D(pts_pairs):
 def ffunc_2D(pts):
     x = pts[:,0]
     y = pts[:,1]
-    u = (1 - (x**2+y**2))**-0.5
+    u = 1 - (x**2+y**2)
     u = torch.nan_to_num(u, posinf=0)
     return u
 
@@ -753,39 +753,78 @@ def ffunc_1D(pts):
 
 
 if __name__ == '__main__':
-    from utils import rl2_error
+    from utils import rl2_error, matrl2_error
     from tqdm import trange
     import time
 
+    # # device = torch.device(f'cuda:0')
     # device = torch.device(f'cuda:0')
+
+    # # MLMM 1D example
+    # n = 19
+    # m = 3 
+    # k = 7
+
+    # # # kernel integral on finest grids
+    # # mlmm1d = MLMM1D(n,m,1,device)
+    # # f_h = ffunc_1D(mlmm1d.ml_grids[0].x_h).T[None].repeat(7,1,1)
+    # # mlmm1d.restrict_ml_f(f_h)
+    # # finest_grid = mlmm1d.ml_grids[0]
+    # # fh = torch.squeeze(mlmm1d.ml_f[0]).T
+    # # nh = finest_grid.nh
+    # # hh = finest_grid.hh
+    # # finest_grid.init_grid_hh()
+    # # finest_pts = finest_grid.x_hh.reshape(-1,2)
+    # # Khh = kernel_func_2D(finest_pts).reshape(nh, nh)
+    # # uh = (hh * (Khh @ fh).T).cpu()
+
+    # # kernel integral on ml grids with different m
+    # for m in [31, 15, 7, 3]:
+    #     mlmm1d = MLMM1D(n,m,k,device)
+    #     f_h = ffunc_1D(mlmm1d.ml_grids[0].x_h).T[None].repeat(7,1,1)
+    #     mlmm1d.restrict_ml_f(f_h)
+    #     mlmm1d.eval_ml_K(kernel_func_2D)
+    #     uh_ = mlmm1d.ml_kint().cpu()
+    #     # print("m {:} - rl2 {:.4e} ".format(m, rl2_error(uh_, uh).numpy()))
+
+    # # # time measure
+    # # st = time.time()
+    # # for _ in trange(1000):
+    # #     uh = hh * (Khh @ fh).T
+    # # et = time.time()
+    # # print('GPU - full kint avg exec time : {:.5f}s'.format((et-st)/1000))
+
+    # st = time.time()
+    # for _ in trange(1000):
+    #     uh_ = mlmm1d.ml_kint()
+    # et = time.time()
+    # print('GPU - ml kint avg exec time : {:.5f}s'.format((et-st)/1000))
+
+    # ----------------------------------------------------------------------
+    # 2D example
+    # ----------------------------------------------------------------------
+    n = 9
+    m = 3 
+    k = 4
     device = torch.device(f'cuda:0')
 
-    # MLMM 1D example
-    n = 19
-    m = 3 
-    k = 7
+    mlmm2d = MLMM2D(n, m, k, device)
+    nh = mlmm2d.ml_grids[0].nh
+    f_h = ffunc_2D(mlmm2d.ml_grids[0].x_h).reshape(nh, nh)[None,None].repeat(2,1,1,1)
+    mlmm2d.restrict_ml_f(f_h)
+    mlmm2d.eval_ml_K(kernel_func_4D)
+    uh_ = mlmm2d.ml_kint().cpu()
 
-    # # kernel integral on finest grids
-    # mlmm1d = MLMM1D(n,m,1,device)
-    # f_h = ffunc_1D(mlmm1d.ml_grids[0].x_h).T[None].repeat(7,1,1)
-    # mlmm1d.restrict_ml_f(f_h)
-    # finest_grid = mlmm1d.ml_grids[0]
-    # fh = torch.squeeze(mlmm1d.ml_f[0]).T
-    # nh = finest_grid.nh
-    # hh = finest_grid.hh
+    # finest_grid = mlmm2d.ml_grids[0]
     # finest_grid.init_grid_hh()
-    # finest_pts = finest_grid.x_hh.reshape(-1,2)
-    # Khh = kernel_func_2D(finest_pts).reshape(nh, nh)
-    # uh = (hh * (Khh @ fh).T).cpu()
+    # nh = finest_grid.nh
+    # hh = finest_grid.hh 
+    # Khh = kernel_func_4D(finest_grid.x_hh.reshape(-1,4)).reshape(nh*nh, nh*nh)
+    # fh = mlmm2d.ml_f[0].reshape(-1,nh*nh).T
+    # uh = hh * (Khh @ fh).T
+    # uh = uh.reshape(-1,nh,nh).cpu()
 
-    # kernel integral on ml grids with different m
-    for m in [31, 15, 7, 3]:
-        mlmm1d = MLMM1D(n,m,k,device)
-        f_h = ffunc_1D(mlmm1d.ml_grids[0].x_h).T[None].repeat(7,1,1)
-        mlmm1d.restrict_ml_f(f_h)
-        mlmm1d.eval_ml_K(kernel_func_2D)
-        uh_ = mlmm1d.ml_kint().cpu()
-        # print("m {:} - rl2 {:.4e} ".format(m, rl2_error(uh_, uh).numpy()))
+    # matrl2_error(uh_[0], uh[0])
 
     # # time measure
     # st = time.time()
@@ -796,107 +835,6 @@ if __name__ == '__main__':
 
     st = time.time()
     for _ in trange(1000):
-        uh_ = mlmm1d.ml_kint()
+        uh_ = mlmm2d.ml_kint()
     et = time.time()
     print('GPU - ml kint avg exec time : {:.5f}s'.format((et-st)/1000))
-
-    # from ops import injection2d, injection4d 
-    # from ops import interp2d, interp1d_cols, interp1d_rows
-    # from ops import restrict2d
-    # from utils import matrl2_error
-
-    # n = 7
-    # m = 4
-    # k = 2
-
-    # # build multi-level grids
-    # ml_grids = []
-    # for l in range(k+1):
-    #     nh = 2**(n-l)+1
-    #     grid = Grid2D(nh, m)
-    #     ml_grids.append(grid)
-    #     print('level {:} : '.format(l), grid.nh)
-    
-    # # build multi-level f
-    # ml_f = []
-    # for l in range(k+1):
-    #     if l == 0:
-    #         x_h = ml_grids[0].x_h
-    #         nh = ml_grids[0].nh
-    #         f_h = ffunc_2D(x_h).reshape(nh, nh)
-    #     else:
-    #         f_h = restrict2d(f_h[None,None])[0,0]
-    #     print('level {:} : '.format(l), f_h.shape)
-    #     ml_f.append(f_h)
-    
-    # # eval u_ref at finest level
-    # finest_grid = ml_grids[0]
-    # finest_grid.init_grid_hh()
-    # K_hh = kernel_func_4D(finest_grid.x_hh.reshape(-1,4))
-    # # eval kernel integral at finest level
-    # nh = finest_grid.nh
-    # hh = finest_grid.hh
-    # f_h = ml_f[0]
-    # u_ref = hh * (K_hh.reshape(nh*nh, nh*nh) @ f_h.reshape(-1)).reshape(nh,nh)
-
-    # # eval kernel at coarest level
-    # coarest_grid = ml_grids[-1]
-    # coarest_grid.init_grid_hh()
-    # K_hh = kernel_func_4D(coarest_grid.x_hh.reshape(-1,4))
-
-    # # eval kernel integral at coarest level
-    # nH = coarest_grid.nh
-    # HH = coarest_grid.hh
-    # f_h = ml_f[-1]
-    # u_h = HH * (K_hh.reshape(nH*nH, nH*nH) @ f_h.reshape(-1)).reshape(nH,nH)
-    
-    # # direct interp
-    # u_interp = u_h
-    # for l in range(k):
-    #     u_interp = interp2d(u_interp[None,None])[0,0]
-    # print("wo : {:.4e} ".format(matrl2_error(u_interp, u_ref).numpy()))
-
-    # # multi-level correction
-    # ml_grids = ml_grids[::-1]
-    # ml_f = ml_f[::-1]
-    # K_IJ = K_hh[coarest_grid.ij_idx]
-    # K_IJ = K_IJ.reshape(nH,nH,2*m+1,2*m+1)
-
-    # for l in range(k):
-    #     nh = ml_grids[l+1].nh
-    #     hh = ml_grids[l+1].hh
-    #     f_h = ml_f[l+1]
-
-    #     # local kernel evaluation
-    #     idx_corr_even, idx_corr_odd = ml_grids[l].fetch_local_idx()
-    #     x_2Ij = ml_grids[l].fetch_K_local_x()
-    #     K_local_even_lst, K_local_odd_lst = K_local_eval_4D(x_2Ij, kernel_func_4D)
-    #     K_ij = K_local_assemble_4D(K_IJ, K_local_even_lst, K_local_odd_lst)
-    #     K_2Ij = K_ij[::2,::2]
-
-    #     # local kernel interpolation
-    #     K_local_even_, K_local_odd_ = K_local_interp_4D(K_IJ, K_2Ij)
-
-    #     # calculate difference
-    #     K_local_even = torch.cat([k.reshape(-1) for k in K_local_even_lst], axis=0)
-    #     K_local_odd = torch.cat([k.reshape(-1) for k in K_local_odd_lst], axis=0)
-    #     K_corr_even = K_local_even - K_local_even_
-    #     K_corr_odd = K_local_odd - K_local_odd_
-
-    #     # correct even
-    #     K_corr_even_sparse = torch.sparse_coo_tensor(idx_corr_even, K_corr_even,(nh**2,nh**2))
-    #     u_corr_ = torch.sparse.mm(K_corr_even_sparse, f_h.reshape(-1,1)).reshape(nh,nh)
-    #     u_corr_ = hh * injection2d(u_corr_[None,None])[0,0]
-    #     u_h_ = u_h + u_corr_
-    #     u_h_ = interp2d(u_h_[None,None])[0,0]
-
-    #     # correct odd 
-    #     K_corr_odd_sparse = torch.sparse_coo_tensor(idx_corr_odd, K_corr_odd,(nh**2,nh**2))
-    #     u_corr_ = hh*torch.sparse.mm(K_corr_odd_sparse, f_h.reshape(-1,1)).reshape(nh,nh)
-    #     u_h_ = u_h_ + u_corr_
-        
-    #     # get new K_IJ, u_h
-    #     K_IJ = K_ij[:,:,m:-m,m:-m]
-    #     u_h = u_h_
-    
-    # print("m {:} : {:.4e} ".format(2*m, matrl2_error(u_h, u_ref).numpy()))
