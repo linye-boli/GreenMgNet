@@ -9,6 +9,41 @@ import kornia
 from ops import restrict1d
 from ops import interp1d
 
+def kfunc_4D(pts_pairs, eps=1e-5):
+    x1 = pts_pairs[:,0]
+    y1 = pts_pairs[:,1]
+
+    x2 = pts_pairs[:,2]
+    y2 = pts_pairs[:,3]
+
+    mask = ((x1**2+y1**2) < 1) & ((x2**2+y2**2) < 1)
+
+    k = 1/(4*torch.pi) * torch.log(((x1 - x2)**2 + (y1-y2)**2) / ((x1*y2-x2*y1)**2 + (x1*x2+y1*y2-1)**2+eps))
+    k = torch.nan_to_num(k, neginf=-2) * mask
+
+    return k
+
+def kfunc_2D(pts_pairs, eps=1e-5):
+    x = pts_pairs[:,0]
+    y = pts_pairs[:,1]
+    k = -torch.log((x-y).abs()+eps)
+    return k
+
+def kfunc_1D(x, eps=1e-5):
+    k = -torch.log(2*x.abs()+eps)
+    return k
+
+def ffunc_2D(pts):
+    x = pts[:,0]
+    y = pts[:,1]
+    u = 1 - (x**2+y**2)
+    u = torch.nan_to_num(u, posinf=0)
+    return u
+
+def ffunc_1D(pts):
+    y = pts
+    return 1-y**2
+
 # gauss smoothing
 def gauss_smooth1d(x, ksize=7, sigma=3.):
     kernel = kornia.filters.get_gaussian_kernel1d(ksize, sigma).to(x)

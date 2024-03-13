@@ -9,8 +9,7 @@ from ops import restrict1d, restrict2d
 from ops import injection1d, injection2d
 
 # 1D MLMM algorithm
-
-class Grid1D:
+class DD_Grid1D:
     def __init__(self, nh, m, device):
         '''
         nh : number of nodes on each axis
@@ -97,7 +96,7 @@ class Grid1D:
         x_i_odd_j = (x_2Ij[:-1] + x_2Ij[1:])/2
         return x_2I_j_odd, x_i_odd_j
 
-class MLMM1D:
+class DD_MLMM1D:
     def __init__(self, n, m, k, device):
         '''
         n : total level
@@ -118,7 +117,7 @@ class MLMM1D:
         ml_grids = []
         for l in range(self.k+1):
             nh = 2**(self.n-l)+1
-            ml_grids.append(Grid1D(nh, self.m, self.device))
+            ml_grids.append(DD_Grid1D(nh, self.m, self.device))
 
             if l == 0:
                 nfinest = nh
@@ -262,7 +261,7 @@ class MLMM1D:
 
 # 2D MLMM algorithm
 
-class Grid2D:
+class DD_Grid2D:
     def __init__(self, nh, m, device):
         '''
         nh : number of nodes on each axis
@@ -395,7 +394,7 @@ class Grid2D:
 
         return [x_2I_j_xeven_yodd, x_2I_j_xodd_yfull], [x_i_xodd_yeven_j, x_i_xeven_yodd_j, x_i_xodd_yodd_j]
 
-class MLMM2D:
+class DD_MLMM2D:
     def __init__(self, n, m, k, device):
         '''
         n : total level
@@ -416,7 +415,7 @@ class MLMM2D:
         ml_grids = []
         for l in range(self.k+1):
             nh = 2**(self.n-l)+1
-            ml_grids.append(Grid2D(nh, self.m, self.device))
+            ml_grids.append(DD_Grid2D(nh, self.m, self.device))
 
             if l == 0:
                 nfinest = nh
@@ -623,141 +622,14 @@ class MLMM2D:
             u_h = interp2d(u_h[:,None])[:,0]
         return u_h
 
-
-def K_local_interp_4D(K_2I2J, K_2Ij):
-    '''
-    local interpolation of local K
-    K_2I2J: nH x nH x (2m+1) x (2m+1), coarse nodes and their COARSE neighbors
-    K_2Ij: nH x nH x (4m+1) x (4m+1), coarse nodes and their FINE neighbors
-    '''
-
-    nH = K_2I2J.shape[0]
-    
-    # Kernel values for i=(2X,2Y), j=(2X',2Y')
-    K_2I2J = rearrange(K_2I2J, 'm n x y -> (m n) x y 1')
-    # Kernel values for i=(2X,2Y), j=(2X',y')
-    K_2I_j_xeven_yfull_ = interp1d_cols(K_2I2J.permute(0,3,1,2)).permute(0,2,3,1) 
-    # Kernel values for i=(2X,2Y), j=(2X',2Y'+1)
-    K_2I_j_xeven_yodd_ = K_2I_j_xeven_yfull_[:,:,1::2] 
-    # Kernel values for i=(2X,2Y), j=(2X'+1,y')
-    K_2I_j_xodd_yfull_ = (K_2I_j_xeven_yfull_[:,:-1] + K_2I_j_xeven_yfull_[:,1:])/2 
-    
-    # Kernel values for i=(2X,2Y), j=(x',y')
-    K_i_xeven_yeven_j = K_2Ij
-    # Kernel values for i=(2X,2Y), j=(x',y')
-    K_i_xodd_yeven_j_ = (K_i_xeven_yeven_j[:-1] + K_i_xeven_yeven_j[1:])/2
-    # Kernel values for i=(2X,2Y), j=(x',y')
-    K_i_xeven_yodd_j_ = (K_i_xeven_yeven_j[:,:-1] + K_i_xeven_yeven_j[:,1:])/2
-    # Kernel values for i=(2X,2Y), j=(x',y')
-    K_i_xodd_yodd_j_ = (K_i_xeven_yodd_j_[:-1] + K_i_xeven_yodd_j_[1:])/2
-
-    # reshape
-    K_2I_j_xeven_yodd_ = K_2I_j_xeven_yodd_.reshape(-1)
-    K_2I_j_xodd_yfull_ = K_2I_j_xodd_yfull_.reshape(-1)
-    K_i_xodd_yeven_j_ = K_i_xodd_yeven_j_.reshape(-1)
-    K_i_xeven_yodd_j_ = K_i_xeven_yodd_j_.reshape(-1)
-    K_i_xodd_yodd_j_ = K_i_xodd_yodd_j_.reshape(-1)
-
-    K_local_even = torch.concat([K_2I_j_xeven_yodd_, K_2I_j_xodd_yfull_], axis=0)
-    K_local_odd = torch.concat([K_i_xodd_yeven_j_, K_i_xeven_yodd_j_, K_i_xodd_yodd_j_], axis=0)
-    
-    return K_local_even, K_local_odd
-
-def K_local_eval_4D(x_2Ij, kernel_func):
-    '''
-    local K evaluation
-    x_2Ij: nH x nH x (4m+1) x (4m+1) x 4, coarse nodes and their FINE neighbors physical coordinates
-    kernel_func : kernel function
-    '''
-    # x_2Ij: i=(2X,2Y), j=(x',y')
-    nH, _, m, _, _ = x_2Ij.shape
-    M = (m-1)//2+1
-
-    # x_2I_j_xeven_yodd: i=(2X,2Y), j=(2X',2Y'+1)
-    x_2I_j_xeven_yodd = x_2Ij[:,:,::2,1::2]
-    # x_2I_j_xeven_yodd: i=(2X,2Y), j=(2X',y')
-    x_2I_j_xodd_yfull = x_2Ij[:,:,1::2]
-
-    # x_i_xodd_yeven_j: i=(2X+1,2Y), j=(x',y')
-    x_i_xodd_yeven_j = (x_2Ij[:-1] + x_2Ij[1:])/2
-    # x_i_xeven_yodd_j: i=(2X,2Y+1), j=(x',y')
-    x_i_xeven_yodd_j = (x_2Ij[:,:-1] + x_2Ij[:,1:])/2
-    # x_i_xodd_yodd_j: i=(2X+1,2Y+1), j=(x',y')
-    x_i_xodd_yodd_j = (x_i_xeven_yodd_j[:-1] + x_i_xeven_yodd_j[1:])/2
-
-    K_2I_j_xeven_yodd = kernel_func(
-        x_2I_j_xeven_yodd.reshape(-1,4)).reshape(nH,nH,M,M-1)
-    K_2I_j_xodd_yfull = kernel_func(
-        x_2I_j_xodd_yfull.reshape(-1,4)).reshape(nH,nH,M-1,m)
-    K_i_xodd_yeven_j = kernel_func(
-        x_i_xodd_yeven_j.reshape(-1,4)).reshape(nH-1,nH,m,m)
-    K_i_xeven_yodd_j = kernel_func(
-        x_i_xeven_yodd_j.reshape(-1,4)).reshape(nH,nH-1,m,m)
-    K_i_xodd_yodd_j = kernel_func(
-        x_i_xodd_yodd_j.reshape(-1,4)).reshape(nH-1,nH-1,m,m)
-
-    K_local_even = [K_2I_j_xeven_yodd, K_2I_j_xodd_yfull]
-    K_local_odd = [K_i_xodd_yeven_j, K_i_xeven_yodd_j, K_i_xodd_yodd_j]
-
-    return K_local_even, K_local_odd
-
-def K_local_assemble_4D(K_IJ, K_local_even, K_local_odd):
-    nH, _, M, _ = K_IJ.shape
-    K_ij = torch.zeros(2*nH-1, 2*nH-1, 2*M-1, 2*M-1).to(K_IJ)
-
-    K_2I_j_xeven_yodd, K_2I_j_xodd_yfull = K_local_even
-    K_i_xodd_yeven_j, K_i_xeven_yodd_j, K_i_xodd_yodd_j = K_local_odd
-
-    K_ij[::2,::2,::2,::2] += K_IJ
-    K_ij[::2,::2,::2,1::2] += K_2I_j_xeven_yodd
-    K_ij[::2,::2,1::2,:] += K_2I_j_xodd_yfull
-    K_ij[1::2,::2] += K_i_xodd_yeven_j
-    K_ij[::2,1::2] += K_i_xeven_yodd_j
-    K_ij[1::2,1::2] += K_i_xodd_yodd_j
-
-    return K_ij
-
-# test functions ---------------------
-
-def kernel_func_4D(pts_pairs):
-    x1 = pts_pairs[:,0]
-    y1 = pts_pairs[:,1]
-
-    x2 = pts_pairs[:,2]
-    y2 = pts_pairs[:,3]
-
-    mask = ((x1**2+y1**2) < 1) & ((x2**2+y2**2) < 1)
-
-    k = 1/(4*torch.pi) * torch.log(((x1 - x2)**2 + (y1-y2)**2) / ((x1*y2-x2*y1)**2 + (x1*x2+y1*y2-1)**2))
-    k = torch.nan_to_num(k, neginf=-2) * mask
-
-    return k
-
-def kernel_func_2D(pts_pairs):
-    x = pts_pairs[:,0]
-    y = pts_pairs[:,1]
-    k = -torch.log((x-y).abs())
-    k = torch.nan_to_num(k, posinf=10)
-    return k
-
-def ffunc_2D(pts):
-    x = pts[:,0]
-    y = pts[:,1]
-    u = 1 - (x**2+y**2)
-    u = torch.nan_to_num(u, posinf=0)
-    return u
-
-def ffunc_1D(pts):
-    y = pts
-    return 1-y**2
-
-
 if __name__ == '__main__':
     from utils import rl2_error, matrl2_error
+    from utils import kfunc_4D, ffunc_2D
+    from utils import kfunc_2D, ffunc_1D
     from tqdm import trange
     import time
 
-    # # device = torch.device(f'cuda:0')
+    # device = torch.device(f'cuda:0')
     # device = torch.device(f'cuda:0')
 
     # # MLMM 1D example
@@ -803,28 +675,42 @@ if __name__ == '__main__':
     # ----------------------------------------------------------------------
     # 2D example
     # ----------------------------------------------------------------------
-    n = 9
+    n = 7
     m = 3 
     k = 4
     device = torch.device(f'cuda:0')
 
-    mlmm2d = MLMM2D(n, m, k, device)
+    mlmm2d = DD_MLMM2D(n, m, 1, device)
     nh = mlmm2d.ml_grids[0].nh
     f_h = ffunc_2D(mlmm2d.ml_grids[0].x_h).reshape(nh, nh)[None,None].repeat(2,1,1,1)
-    mlmm2d.restrict_ml_f(f_h)
-    mlmm2d.eval_ml_K(kernel_func_4D)
-    uh_ = mlmm2d.ml_kint().cpu()
+    finest_grid = mlmm2d.ml_grids[0]
+    finest_grid.init_grid_hh()
+    nh = finest_grid.nh
+    hh = finest_grid.hh 
+    Khh = kfunc_4D(finest_grid.x_hh.reshape(-1,4)).reshape(nh*nh, nh*nh)
+    fh = f_h.reshape(-1,nh*nh).T
+    uh = hh * (Khh @ fh).T
+    uh = uh.reshape(-1,nh,nh).cpu()
 
-    # finest_grid = mlmm2d.ml_grids[0]
-    # finest_grid.init_grid_hh()
-    # nh = finest_grid.nh
-    # hh = finest_grid.hh 
-    # Khh = kernel_func_4D(finest_grid.x_hh.reshape(-1,4)).reshape(nh*nh, nh*nh)
-    # fh = mlmm2d.ml_f[0].reshape(-1,nh*nh).T
-    # uh = hh * (Khh @ fh).T
-    # uh = uh.reshape(-1,nh,nh).cpu()
+    for k in [3, 2, 1]:
+        mlmm2d = DD_MLMM2D(n, 3, k, device)
+        nh = mlmm2d.ml_grids[0].nh
+        f_h = ffunc_2D(mlmm2d.ml_grids[0].x_h).reshape(nh, nh)[None,None].repeat(2,1,1,1)
+        mlmm2d.restrict_ml_f(f_h)
+        mlmm2d.eval_ml_K(kfunc_4D)
+        uh_ = mlmm2d.ml_kint().cpu()
 
-    # matrl2_error(uh_[0], uh[0])
+        print("m {:} - k {:} - rl2 ".format(m, k), matrl2_error(uh_[0], uh[0]).numpy())
+    
+    for m in [1, 3, 5, 7, 9]:
+        mlmm2d = DD_MLMM2D(n, m, 3, device)
+        nh = mlmm2d.ml_grids[0].nh
+        f_h = ffunc_2D(mlmm2d.ml_grids[0].x_h).reshape(nh, nh)[None,None].repeat(2,1,1,1)
+        mlmm2d.restrict_ml_f(f_h)
+        mlmm2d.eval_ml_K(kfunc_4D)
+        uh_ = mlmm2d.ml_kint().cpu()
+
+        print("m {:} - k {:} - rl2 ".format(m, k), matrl2_error(uh_[0], uh[0]).numpy())
 
     # # time measure
     # st = time.time()
@@ -833,8 +719,8 @@ if __name__ == '__main__':
     # et = time.time()
     # print('GPU - full kint avg exec time : {:.5f}s'.format((et-st)/1000))
 
-    st = time.time()
-    for _ in trange(1000):
-        uh_ = mlmm2d.ml_kint()
-    et = time.time()
-    print('GPU - ml kint avg exec time : {:.5f}s'.format((et-st)/1000))
+    # st = time.time()
+    # for _ in trange(1000):
+    #     uh_ = mlmm2d.ml_kint()
+    # et = time.time()
+    # print('GPU - ml kint avg exec time : {:.5f}s'.format((et-st)/1000))
