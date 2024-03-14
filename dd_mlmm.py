@@ -453,6 +453,8 @@ class DD_MLMM2D:
         '''
         restrict f into multi-level
         '''
+        nh = self.ml_grids[0].nh
+        f_h = rearrange(f_h, '(m n) b->b 1 m n', m=nh, n=nh)
         ml_f = [f_h]
         for _ in range(self.k):
             f_h = restrict2d(f_h)
@@ -610,22 +612,23 @@ class DD_MLMM2D:
             K_IJ = K_ij[:,:,self.m:-self.m,self.m:-self.m]
             u_h = u_h_
 
-        return u_h
+        return rearrange(u_h, 'b m n -> (m n) b', m=nh, n=nh)
 
     def ml_kint_wo(self):
         u_h = self.coarest_full_kint()
+        nh = self.ml_grids[0].nh 
         nH = self.ml_grids[-1].nh 
         K_IJ = self.K_HH[self.ml_grids[-1].ij_idx]
         K_IJ = K_IJ.reshape(nH,nH,2*self.m+1,2*self.m+1)
 
         for l in range(1, self.k+1):
             u_h = interp2d(u_h[:,None])[:,0]
-        return u_h
+        return rearrange(u_h, 'b m n -> (m n) b', m=nh, n=nh)
 
 if __name__ == '__main__':
     from utils import rl2_error, matrl2_error
-    from utils import kfunc_4D, ffunc_2D
-    from utils import kfunc_2D, ffunc_1D
+    from utils import dd_kfunc_4D, ffunc_2D
+    from utils import dd_kfunc_2D, ffunc_1D
     from tqdm import trange
     import time
 
@@ -675,42 +678,34 @@ if __name__ == '__main__':
     # ----------------------------------------------------------------------
     # 2D example
     # ----------------------------------------------------------------------
+    bsz = 4
     n = 7
     m = 3 
     k = 4
     device = torch.device(f'cuda:0')
 
-    mlmm2d = DD_MLMM2D(n, m, 1, device)
-    nh = mlmm2d.ml_grids[0].nh
-    f_h = ffunc_2D(mlmm2d.ml_grids[0].x_h).reshape(nh, nh)[None,None].repeat(2,1,1,1)
-    finest_grid = mlmm2d.ml_grids[0]
+    finest_grid = DD_Grid2D(2**n+1, m, device)
     finest_grid.init_grid_hh()
+    hh = finest_grid.hh
     nh = finest_grid.nh
-    hh = finest_grid.hh 
-    Khh = kfunc_4D(finest_grid.x_hh.reshape(-1,4)).reshape(nh*nh, nh*nh)
-    fh = f_h.reshape(-1,nh*nh).T
-    uh = hh * (Khh @ fh).T
-    uh = uh.reshape(-1,nh,nh).cpu()
+    Khh = dd_kfunc_4D(finest_grid.x_hh).reshape(nh*nh, nh*nh)
+    fh = ffunc_2D(finest_grid.x_h).repeat(1,bsz)
+
+    uh = hh * (Khh @ fh)
 
     for k in [3, 2, 1]:
-        mlmm2d = DD_MLMM2D(n, 3, k, device)
-        nh = mlmm2d.ml_grids[0].nh
-        f_h = ffunc_2D(mlmm2d.ml_grids[0].x_h).reshape(nh, nh)[None,None].repeat(2,1,1,1)
-        mlmm2d.restrict_ml_f(f_h)
-        mlmm2d.eval_ml_K(kfunc_4D)
-        uh_ = mlmm2d.ml_kint().cpu()
-
-        print("m {:} - k {:} - rl2 ".format(m, k), matrl2_error(uh_[0], uh[0]).numpy())
+        dd2d = DD_MLMM2D(n, 3, k, device)
+        dd2d.restrict_ml_f(fh)
+        dd2d.eval_ml_K(dd_kfunc_4D)
+        uh_ = dd2d.ml_kint()
+        print("m {:} - k {:} - rl2 ".format(m, k), matrl2_error(uh_, uh).cpu().numpy())
     
     for m in [1, 3, 5, 7, 9]:
-        mlmm2d = DD_MLMM2D(n, m, 3, device)
-        nh = mlmm2d.ml_grids[0].nh
-        f_h = ffunc_2D(mlmm2d.ml_grids[0].x_h).reshape(nh, nh)[None,None].repeat(2,1,1,1)
-        mlmm2d.restrict_ml_f(f_h)
-        mlmm2d.eval_ml_K(kfunc_4D)
-        uh_ = mlmm2d.ml_kint().cpu()
-
-        print("m {:} - k {:} - rl2 ".format(m, k), matrl2_error(uh_[0], uh[0]).numpy())
+        dd2d = DD_MLMM2D(n, m, 3, device)
+        dd2d.restrict_ml_f(fh)
+        dd2d.eval_ml_K(dd_kfunc_4D)
+        uh_ = dd2d.ml_kint()
+        print("m {:} - k {:} - rl2 ".format(m, k), matrl2_error(uh_, uh).cpu().numpy())
 
     # # time measure
     # st = time.time()

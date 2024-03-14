@@ -119,20 +119,22 @@ class Toep_MLMM1D:
             K_local = self.K_locals[-1-l]
             idx_local = self.local_idx[-1-l]
             K_h[idx_local] = K_local
-        self.K_h = K_h
+        self.K_h = K_h.reshape(-1,1)
 
     def fft_kint(self, f_h):
-        K = self.K_h 
-        f = f_h 
+        K = self.K_h
+        f = f_h
 
-        m = (K.shape[-1] - 1)//2
-        K_neg = K[...,:m].flip(-1)
-        K_pos = K[...,m+1:].flip(-1)
-        K_ = torch.concat([K[...,[m]], K_neg, K[...,[m]], K_pos], axis=-1)
-        f_ = torch.concat([f, torch.zeros_like(f)], axis=-1)
-        K_ft = torch.fft.rfft(K_)
-        f_ft = torch.fft.rfft(f_)
-        u_h = torch.fft.irfft(K_ft*f_ft)[...,:m+1]
+        m = (K.shape[0] - 1)//2
+        K_neg = K[:m].flip(-1)
+        K_pos = K[m+1:].flip(-1)
+
+        K_ = torch.concat([K[[m]], K_pos, K[[m]], K_neg], axis=0)
+        f_ = torch.concat([f, torch.zeros_like(f)], axis=0)
+    
+        K_ft = torch.fft.rfft(K_.T)
+        f_ft = torch.fft.rfft(f_.T)
+        u_h = torch.fft.irfft(K_ft*f_ft).T[:m+1]
 
         return u_h * self.ml_grids[0].hh
 
@@ -257,15 +259,15 @@ class Toep_MLMM2D:
         evaluate Kernel function on coarest grid and local pts on each grids
         '''
         # coarest grid
-        K_H = kernel_func(self.coarest_pts)
+        K_H = kernel_func(self.coarest_pts*2)
         self.K_H = K_H
         
         # local pts
         K_locals_even = []
         K_locals_odd = []
         for l in range(self.k):
-            K_local_even = kernel_func(self.local_even_pts[l])
-            K_local_odd = kernel_func(self.local_odd_pts[l])
+            K_local_even = kernel_func(self.local_even_pts[l]*2)
+            K_local_odd = kernel_func(self.local_odd_pts[l]*2)
             K_locals_even.append(K_local_even)
             K_locals_odd.append(K_local_odd)
             
@@ -283,20 +285,22 @@ class Toep_MLMM2D:
             K_local_odd = self.K_locals_odd[-1-l]
             idx_local_odd = self.local_odd_idx[-1-l]
 
-            K_h[idx_local_even[:,0], idx_local_even[:,1]] = K_local_even
-            K_h[idx_local_odd[:,0], idx_local_odd[:,1]] = K_local_odd
+            K_h[idx_local_even[:,[0]], idx_local_even[:,[1]]] = K_local_even
+            K_h[idx_local_odd[:,[0]], idx_local_odd[:,[1]]] = K_local_odd
             
         self.K_h = K_h
     
     def fft_kint(self, f_h):
-        K = self.K_h
-        f_ = f_h
+        hh = self.ml_grids[0].hh
+        nh = self.ml_grids[0].nh
+        K = self.K_h[None]
+        f_ = rearrange(f_h, '(m n) b -> b m n', m=nh, n=nh)
         l = (K.shape[-1] - 1)//2 + 1
-        assert l == f_h.shape[-1]
-        f = torch.zeros_like(K).repeat(f_h.shape[0],1,1)
+        assert l == f_.shape[-1]
+        f = torch.zeros_like(K).repeat(f_.shape[0],1,1)
 
         f[...,:l,:l] += f_
         K_ft = torch.fft.rfft2(K, s=(2*l,2*l))
         f_ft = torch.fft.rfft2(f, s=(2*l,2*l))
         u = torch.fft.irfft2(K_ft*f_ft)[..., l-1:-1,l-1:-1]
-        return u * self.ml_grids[0].hh
+        return hh * rearrange(u, 'b m n -> (m n) b', m=nh, n=nh)

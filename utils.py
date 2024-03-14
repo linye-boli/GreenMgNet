@@ -18,7 +18,9 @@ def dd_kfunc_4D(pts_pairs, eps=1e-5):
 
     mask = ((x1**2+y1**2) < 1) & ((x2**2+y2**2) < 1)
 
-    k = 1/(4*torch.pi) * torch.log(((x1 - x2)**2 + (y1-y2)**2) / ((x1*y2-x2*y1)**2 + (x1*x2+y1*y2-1)**2+eps))
+    k = 1/(4*torch.pi) * torch.log(
+        ((x1 - x2)**2 + (y1-y2)**2) / \
+        ((x1*y2-x2*y1)**2 + (x1*x2+y1*y2-1)**2))
     k = torch.nan_to_num(k, neginf=-2) * mask
 
     return k
@@ -38,8 +40,8 @@ def toep_kfunc_1D(x, eps=1e-5):
     return k
 
 def ffunc_2D(pts):
-    x = pts[:,0]
-    y = pts[:,1]
+    x = pts[:,[0]]
+    y = pts[:,[1]]
     u = 1 - (x**2+y**2)
     u = torch.nan_to_num(u, posinf=0)
     return u
