@@ -96,8 +96,8 @@ class DD_Grid1D:
         x_i_odd_j = (x_2Ij[:-1] + x_2Ij[1:])/2
         return x_2I_j_odd, x_i_odd_j
 
-class DD_MLMM1D:
-    def __init__(self, n, m, k, device):
+class DD_GMGN1D:
+    def __init__(self, n, m, k, kernel, device):
         '''
         n : total level
         m : neighbor radius for a nodes on each axis
@@ -107,6 +107,7 @@ class DD_MLMM1D:
         self.m = m 
         self.k = k
         self.device = device
+        self.kernel = kernel 
         self.build_ml_grids()
         self.fetch_eval_pts()
 
@@ -160,21 +161,21 @@ class DD_MLMM1D:
         self.local_pts = local_pts
         self.local_idx = local_idx
 
-    def eval_ml_K(self, kernel_func):
+    def eval_ml_K(self):
         '''
         evaluate Kernel function on coarest grid and local pts on each grids
         '''
         # coarest grid
-        K_HH = kernel_func(self.coarest_pts)
+        K_HH = self.kernel(self.coarest_pts)
         self.K_HH = K_HH 
         
         # local pts
         K_locals = []
         for l in range(self.k+1):
             m, n, _ = self.local_pts[l][0].shape
-            K_local_even = kernel_func(self.local_pts[l][0].reshape(-1,2)).reshape(m, n)
+            K_local_even = self.kernel(self.local_pts[l][0].reshape(-1,2)).reshape(m, n)
             m, n, _ = self.local_pts[l][1].shape
-            K_local_odd = kernel_func(self.local_pts[l][1].reshape(-1,2)).reshape(m, n)
+            K_local_odd = self.kernel(self.local_pts[l][1].reshape(-1,2)).reshape(m, n)
             K_locals.append([K_local_even, K_local_odd])        
         self.K_locals = K_locals
 
@@ -394,8 +395,8 @@ class DD_Grid2D:
 
         return [x_2I_j_xeven_yodd, x_2I_j_xodd_yfull], [x_i_xodd_yeven_j, x_i_xeven_yodd_j, x_i_xodd_yodd_j]
 
-class DD_MLMM2D:
-    def __init__(self, n, m, k, device):
+class DD_GMGN2D:
+    def __init__(self, n, m, k, kernel, device):
         '''
         n : total level
         m : neighbor radius for a nodes on each axis
@@ -405,6 +406,7 @@ class DD_MLMM2D:
         self.m = m 
         self.k = k
         self.device = device
+        self.kernel = kernel 
         self.build_ml_grids()
         self.fetch_eval_pts()
     
@@ -461,12 +463,12 @@ class DD_MLMM2D:
             ml_f.append(f_h)
         self.ml_f = ml_f
     
-    def eval_ml_K(self, kernel_func):
+    def eval_ml_K(self):
         '''
         evaluate Kernel function on coarest grid and local pts on each grids
         '''
         # coarse grid 
-        K_HH = kernel_func(self.coarest_pts)
+        K_HH = self.kernel(self.coarest_pts)
         self.K_HH = K_HH
 
         # local pts
@@ -476,23 +478,23 @@ class DD_MLMM2D:
             x_i_xodd_yeven_j, x_i_xeven_yodd_j, x_i_xodd_yodd_j = self.local_pts[l][1]
 
             mx, my, nx, ny, _ = x_2I_j_xeven_yodd.shape
-            K_2I_j_xeven_yodd = kernel_func(
+            K_2I_j_xeven_yodd = self.kernel(
                 x_2I_j_xeven_yodd.reshape(-1,4)).reshape(mx, my, nx, ny)
             
             mx, my, nx, ny, _ = x_2I_j_xodd_yfull.shape
-            K_2I_j_xodd_yfull = kernel_func(
+            K_2I_j_xodd_yfull = self.kernel(
                 x_2I_j_xodd_yfull.reshape(-1,4)).reshape(mx, my, nx, ny)
             
             mx, my, nx, ny, _ = x_i_xodd_yeven_j.shape
-            K_i_xodd_yeven_j = kernel_func(
+            K_i_xodd_yeven_j = self.kernel(
                 x_i_xodd_yeven_j.reshape(-1,4)).reshape(mx, my, nx, ny)
             
             mx, my, nx, ny, _ = x_i_xeven_yodd_j.shape
-            K_i_xeven_yodd_j = kernel_func(
+            K_i_xeven_yodd_j = self.kernel(
                 x_i_xeven_yodd_j.reshape(-1,4)).reshape(mx, my, nx, ny)
             
             mx, my, nx, ny, _ = x_i_xodd_yodd_j.shape
-            K_i_xodd_yodd_j = kernel_func(
+            K_i_xodd_yodd_j = self.kernel(
                 x_i_xodd_yodd_j.reshape(-1,4)).reshape(mx, my, nx, ny)
             
             K_local_even = [K_2I_j_xeven_yodd, K_2I_j_xodd_yfull]

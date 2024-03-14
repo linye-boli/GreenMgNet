@@ -42,8 +42,8 @@ class Toep_Grid1D:
         self.j_coords = self.coords_h[(nh-1)//2-self.m+1:(nh-1)//2+self.m][1::2]
         self.j_idx = self.j_coords
     
-class Toep_MLMM1D:
-    def __init__(self, n, m, k, device):
+class Toep_GMGN1D:
+    def __init__(self, n, m, k, kernel, device):
         '''
         n : total level
         m : neighbor radius for a nodes on each axis
@@ -55,6 +55,7 @@ class Toep_MLMM1D:
         self.m = m 
         self.k = k
         self.device = device
+        self.kernel = kernel
         self.build_ml_grids()
         self.fetch_eval_pts()
     
@@ -97,18 +98,18 @@ class Toep_MLMM1D:
         self.local_pts = local_pts
         self.local_idx = local_idx
     
-    def eval_ml_K(self, kernel_func):
+    def eval_ml_K(self):
         '''
         evaluate Kernel function on coarest grid and local pts on each grids
         '''
         # coarest grid
-        K_H = kernel_func(self.coarest_pts)
+        K_H = self.kernel(self.coarest_pts)
         self.K_H = K_H
         
         # local pts
         K_locals = []
         for l in range(self.k):
-            K_local = kernel_func(self.local_pts[l])
+            K_local = self.kernel(self.local_pts[l])
             K_locals.append(K_local)
         self.K_locals = K_locals
 
@@ -186,8 +187,8 @@ class Toep_Grid2D:
         self.idx_local_even = idx_local_even 
         self.idx_local_odd = idx_local_odd 
 
-class Toep_MLMM2D:
-    def __init__(self, n, m, k, device):
+class Toep_GMGN2D:
+    def __init__(self, n, m, k, kernel, device):
         '''
         n : total level
         m : neighbor radius for a nodes on each axis
@@ -199,6 +200,7 @@ class Toep_MLMM2D:
         self.m = m 
         self.k = k
         self.device = device
+        self.kernel = kernel 
         self.build_ml_grids()
         self.fetch_eval_pts()
     
@@ -254,20 +256,20 @@ class Toep_MLMM2D:
         self.local_even_idx = local_even_idx
         self.local_odd_idx = local_odd_idx
     
-    def eval_ml_K(self, kernel_func):
+    def eval_ml_K(self):
         '''
         evaluate Kernel function on coarest grid and local pts on each grids
         '''
         # coarest grid
-        K_H = kernel_func(self.coarest_pts*2)
+        K_H = self.kernel(self.coarest_pts*2)
         self.K_H = K_H
         
         # local pts
         K_locals_even = []
         K_locals_odd = []
         for l in range(self.k):
-            K_local_even = kernel_func(self.local_even_pts[l]*2)
-            K_local_odd = kernel_func(self.local_odd_pts[l]*2)
+            K_local_even = self.kernel(self.local_even_pts[l]*2)
+            K_local_odd = self.kernel(self.local_odd_pts[l]*2)
             K_locals_even.append(K_local_even)
             K_locals_odd.append(K_local_odd)
             
