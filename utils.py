@@ -9,7 +9,7 @@ import kornia
 from ops import restrict1d
 from ops import interp1d
 
-def kfunc_4D(pts_pairs, eps=1e-5):
+def dd_kfunc_4D(pts_pairs, eps=1e-5):
     x1 = pts_pairs[:,0]
     y1 = pts_pairs[:,1]
 
@@ -23,13 +23,17 @@ def kfunc_4D(pts_pairs, eps=1e-5):
 
     return k
 
-def kfunc_2D(pts_pairs, eps=1e-5):
+def dd_kfunc_2D(pts_pairs, eps=1e-5):
     x = pts_pairs[:,0]
     y = pts_pairs[:,1]
     k = -torch.log((x-y).abs()+eps)
     return k
 
-def kfunc_1D(x, eps=1e-5):
+def toep_kfunc_2D(x, eps=1e-5):
+    k = (torch.linalg.norm(x, axis=1)+eps)**(-0.5)
+    return k
+
+def toep_kfunc_1D(x, eps=1e-5):
     k = -torch.log(2*x.abs()+eps)
     return k
 
