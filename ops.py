@@ -270,3 +270,51 @@ def fetch_nbrs2d(coords, mx1=2, mx2=2, my1=2, my2=2):
 
     # return coords_nbrs_lst
     return torch.cat(coords_nbrs_lst, axis=1).reshape(n, mx1+mx2+1, my1+my2+1, d)
+
+if __name__ == '__main__':
+    from utils import l1_norm
+    # test interp1d
+    l = 8
+    n = 2**l - 1
+    lb = 0
+    ub = 2*np.pi
+    xh = torch.linspace(lb, ub, n+2)[1:-1][None][None]
+    xH = xh[:,:,1::2]
+    vh = torch.sin(xh)
+    vH = torch.sin(xH)
+
+    vh_ord2 = interp1d(vH, order=2)
+    vh_ord4 = interp1d(vH, order=4)
+    vh_ord6 = interp1d(vH, order=6)
+
+    vh_ord2_mat = interp1d_matmul(vH, order=2)
+    vh_ord4_mat = interp1d_matmul(vH, order=4)
+    vh_ord6_mat = interp1d_matmul(vH, order=6)
+
+    vH_ord2 = restrict1d(vh, order=2)
+    vH_ord4 = restrict1d(vh, order=4)
+    vH_ord6 = restrict1d(vh, order=6)
+
+    vH_ord2_mat = restrict1d_matmul(vh, order=2)
+    vH_ord4_mat = restrict1d_matmul(vh, order=4)
+    vH_ord6_mat = restrict1d_matmul(vh, order=6)
+
+    print('deconv interp error(L1Norm) : ')
+    print('ord2 : ', l1_norm(vh_ord2,vh))
+    print('ord4 : ', l1_norm(vh_ord4,vh))
+    print('ord6 : ', l1_norm(vh_ord6,vh))
+    
+    print('matmul interp error : ')
+    print('ord2 : ', l1_norm(vh_ord2_mat,vh))
+    print('ord4 : ', l1_norm(vh_ord4_mat,vh))
+    print('ord6 : ', l1_norm(vh_ord6_mat,vh))
+    
+    print('conv restrict error : ')
+    print('ord2 : ', l1_norm(vH_ord2,vH))
+    print('ord4 : ', l1_norm(vH_ord4,vH))
+    print('ord6 : ', l1_norm(vH_ord6,vH))
+    
+    print('matmul restrict error : ')
+    print('ord2 : ', l1_norm(vH_ord2_mat,vH))
+    print('ord4 : ', l1_norm(vH_ord4_mat,vH))
+    print('ord6 : ', l1_norm(vH_ord6_mat,vH))

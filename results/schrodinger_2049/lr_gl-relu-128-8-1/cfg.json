@@ -1,1 +1,0 @@
-{"device": 1, "task": "schrodinger", "res": 2049, "model": "lr_gl", "act": "relu", "seed": 1, "lr_adam": 0.001, "ep_adam": 1000, "sch": true, "k": 5, "m": 7, "r": 8, "h": 128}

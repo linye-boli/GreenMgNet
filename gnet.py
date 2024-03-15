@@ -36,15 +36,19 @@ class Grid1D:
         self.coords_hh = coords_hh.to(self.device)
 
 class GN1D:
-    def __init__(self, n, kernel, device):
+    def __init__(self, n, kernel, device, sub_num=1024):
         '''
         n : total level
         '''
         self.n = n 
         self.kernel = kernel
         self.device = device
+        self.sub_num = sub_num
         self.build_grid()
         self.fetch_eval_pts()
+    
+    def rand_sub(self):
+        self.sub = torch.randint(low=0, high=self.grid.nh, size=(self.sub_num,))
 
     def build_grid(self):
         nh = 2**self.n + 1
@@ -63,6 +67,37 @@ class GN1D:
         nh = self.grid.nh
         Khh = self.K_hh.reshape(nh, nh)
         uh = hh * (Khh @ fh)
+        return uh
+
+    def eval_K_sub(self):
+        nh = self.grid.nh
+        pts = self.pts.reshape(nh, nh, 2)
+        K_hh = self.kernel(pts[self.sub])
+        self.K_hh = torch.squeeze(K_hh)
+
+    def sub_kint(self, fh):
+        hh = self.grid.hh
+        Khh = self.K_hh
+        uh = hh * (Khh @ fh)
+        return uh
+
+    def eval_K_batch(self):
+        pts_batch = torch.split(self.pts, 20480)
+        K_hh = []
+        for pts in pts_batch:
+            K_hh.append(self.kernel(pts).detach())
+        self.K_hh = torch.cat(K_hh)
+
+    def batch_kint(self, fh):
+        hh = self.grid.hh
+        nh = self.grid.nh
+        Khh = self.K_hh.reshape(nh, nh)
+        Khh_batch = torch.split(Khh, 4096)
+
+        uh = []
+        for Khh_sub in Khh_batch:
+            uh.append(hh * (Khh_sub @ fh))
+        uh = torch.cat(uh)
         return uh
 
 class Grid2D:
@@ -99,7 +134,7 @@ class Grid2D:
         self.coords_hh = coords_hh.to(self.device)
     
 class GN2D:
-    def __init__(self, n, kernel, device):
+    def __init__(self, n, kernel, device, sub_num=64):
         '''
         n : total level
         m : neighbor radius for a nodes on each axis
@@ -108,6 +143,7 @@ class GN2D:
         self.n = n 
         self.device = device
         self.kernel = kernel
+        self.sub_num = sub_num
         self.build_grid()
         self.fetch_eval_pts()
     
@@ -129,3 +165,32 @@ class GN2D:
         Khh = self.K_hh.reshape(nh*nh, nh*nh)
         uh = hh * (Khh @ fh) 
         return uh
+    
+    def rand_sub(self):
+        self.sub = torch.randint(low=0, high=self.grid.nh**2, size=(self.sub_num,))
+
+    def eval_K_sub(self):
+        nh = self.grid.nh
+        pts = self.pts.reshape(nh*nh, nh, nh, 4)
+        K_hh = self.kernel(pts[self.sub])
+        self.K_hh = torch.squeeze(K_hh)
+
+    def sub_kint(self, fh):
+        hh = self.grid.hh
+        Khh = self.K_hh.reshape(self.sub_num,-1)
+        uh = hh * (Khh @ fh)
+        return uh
+    
+    def evalint_batch(self, fh):
+        hh = self.grid.hh
+        nh = self.grid.nh
+        fh = fh.reshape(nh*nh,-1)
+        pts_batch = torch.split(self.pts.reshape(nh*nh, nh, nh, 4), 64)
+        uh = []
+        for pts in pts_batch:
+            bsz = pts.shape[0]
+            K_sub = self.kernel(pts).detach().reshape(bsz, -1)
+            u_sub = hh * (K_sub @ fh)
+            uh.append(u_sub)     
+        
+        return torch.cat(uh)

@@ -1,1 +1,0 @@
-{"device": 1, "task": "cosine", "res": 2049, "model": "toep_gl", "act": "relu", "seed": 1, "lr_adam": 0.001, "ep_adam": 2500, "sch": true, "k": 5, "m": 7, "r": 1, "h": 128}

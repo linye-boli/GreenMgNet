@@ -135,7 +135,10 @@ class DD_GMGN1D:
         '''
         restrict f into multi-level
         '''
+        nh = self.ml_grids[0].nh
+        f_h = rearrange(f_h, 'm b->b 1 m', m=nh)
         ml_f = [f_h]
+
         for _ in range(self.k):
             f_h = restrict1d(f_h)
             ml_f.append(f_h)
@@ -258,7 +261,7 @@ class DD_GMGN1D:
             K_IJ = K_ij[:,self.m:-self.m]
             u_h = u_h_
 
-        return u_h
+        return u_h.T
 
 # 2D MLMM algorithm
 
@@ -696,16 +699,16 @@ if __name__ == '__main__':
     uh = hh * (Khh @ fh)
 
     for k in [3, 2, 1]:
-        dd2d = DD_MLMM2D(n, 3, k, device)
+        dd2d = DD_GMGN2D(n, 3, k, dd_kfunc_4D,device)
         dd2d.restrict_ml_f(fh)
-        dd2d.eval_ml_K(dd_kfunc_4D)
+        dd2d.eval_ml_K()
         uh_ = dd2d.ml_kint()
         print("m {:} - k {:} - rl2 ".format(m, k), matrl2_error(uh_, uh).cpu().numpy())
     
     for m in [1, 3, 5, 7, 9]:
-        dd2d = DD_MLMM2D(n, m, 3, device)
+        dd2d = DD_GMGN2D(n, m, 3, dd_kfunc_4D,device)
         dd2d.restrict_ml_f(fh)
-        dd2d.eval_ml_K(dd_kfunc_4D)
+        dd2d.eval_ml_K()
         uh_ = dd2d.ml_kint()
         print("m {:} - k {:} - rl2 ".format(m, k), matrl2_error(uh_, uh).cpu().numpy())
 

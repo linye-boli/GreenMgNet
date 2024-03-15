@@ -5,9 +5,6 @@ import torch.nn.functional as F
 from einops import rearrange
 import pandas as pd
 import random 
-import kornia
-from ops import restrict1d
-from ops import interp1d
 
 def dd_kfunc_4D(pts_pairs, eps=1e-5):
     x1 = pts_pairs[:,0]
@@ -49,17 +46,6 @@ def ffunc_2D(pts):
 def ffunc_1D(pts):
     y = pts
     return 1-y**2
-
-# gauss smoothing
-def gauss_smooth1d(x, ksize=7, sigma=3.):
-    kernel = kornia.filters.get_gaussian_kernel1d(ksize, sigma).to(x)
-    x = F.conv1d(x, kernel[None], stride=1, padding=(ksize-1)//2)
-    return x
-
-def gauss_smooth2d(x, ksize=5, sigma=1.5):
-    kernel = kornia.filters.get_gaussian_kernel2d((ksize,ksize),(sigma,sigma)).to(x)
-    x = F.conv2d(x, kernel[None], stride=1, padding=(ksize-1)//2)
-    return x
 
 def l1_norm(est, ref):
     if len(est.shape) == 2:
@@ -105,28 +91,7 @@ def gradient_loss(A, h, thr=3, w='log'):
 
         return loss
 
-def init_records(log_root, args):
-    resolution = str(args.res)
-    task_nm = '_'.join([args.task, resolution])
-
-    if args.model == 'toep_mg':
-        exp_nm = '-'.join([args.model, args.act, str(args.h), str(args.k), str(args.m), str(args.seed)])
-    
-    if args.model == 'dd_mg':
-        exp_nm = '-'.join([args.model, args.act, str(args.h), str(args.k), str(args.m), str(args.seed)])    
-
-    if args.model == 'lrdd_mg':
-        exp_nm = '-'.join([args.model, args.act, str(args.h), str(args.k), str(args.m), str(args.r), str(args.seed)])
-        
-    if args.model in ['toep_gl', 'gl']:
-        exp_nm = '-'.join([args.model, args.act, str(args.h), str(args.seed)])    
-    
-    if args.model == 'lr_gl':
-        exp_nm = '-'.join([args.model, args.act, str(args.h), str(args.r), str(args.seed)])    
-
-    if args.model == 'fno':
-        exp_nm = '-'.join([args.model, str(args.seed)])
-
+def init_records(log_root, task_nm, exp_nm):
     exp_root = os.path.join(log_root, task_nm, exp_nm)
     os.makedirs(exp_root, exist_ok=True)
 
@@ -256,51 +221,5 @@ def eval_model(test_loader, model, device):
 
     return test_rl2
 
-if __name__ == '__main__':
 
-    # test interp1d
-    l = 8
-    n = 2**l - 1
-    lb = 0
-    ub = 2*np.pi
-    xh = torch.linspace(lb, ub, n+2)[1:-1][None][None]
-    xH = xh[:,:,1::2]
-    vh = torch.sin(xh)
-    vH = torch.sin(xH)
-
-    vh_ord2 = interp1d(vH, order=2)
-    vh_ord4 = interp1d(vH, order=4)
-    vh_ord6 = interp1d(vH, order=6)
-
-    vh_ord2_mat = interp1d_matmul(vH, order=2)
-    vh_ord4_mat = interp1d_matmul(vH, order=4)
-    vh_ord6_mat = interp1d_matmul(vH, order=6)
-
-    vH_ord2 = restrict1d(vh, order=2)
-    vH_ord4 = restrict1d(vh, order=4)
-    vH_ord6 = restrict1d(vh, order=6)
-
-    vH_ord2_mat = restrict1d_matmul(vh, order=2)
-    vH_ord4_mat = restrict1d_matmul(vh, order=4)
-    vH_ord6_mat = restrict1d_matmul(vh, order=6)
-
-    print('deconv interp error(L1Norm) : ')
-    print('ord2 : ', l1_norm(vh_ord2,vh))
-    print('ord4 : ', l1_norm(vh_ord4,vh))
-    print('ord6 : ', l1_norm(vh_ord6,vh))
-    
-    print('matmul interp error : ')
-    print('ord2 : ', l1_norm(vh_ord2_mat,vh))
-    print('ord4 : ', l1_norm(vh_ord4_mat,vh))
-    print('ord6 : ', l1_norm(vh_ord6_mat,vh))
-    
-    print('conv restrict error : ')
-    print('ord2 : ', l1_norm(vH_ord2,vH))
-    print('ord4 : ', l1_norm(vH_ord4,vH))
-    print('ord6 : ', l1_norm(vH_ord6,vH))
-    
-    print('matmul restrict error : ')
-    print('ord2 : ', l1_norm(vH_ord2_mat,vH))
-    print('ord4 : ', l1_norm(vH_ord4_mat,vH))
-    print('ord6 : ', l1_norm(vH_ord6_mat,vH))
     

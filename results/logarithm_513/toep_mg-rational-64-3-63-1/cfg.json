@@ -1,1 +1,0 @@
-{"device": 0, "task": "logarithm", "res": 513, "model": "toep_mg", "act": "rational", "seed": 1, "lr_adam": 0.001, "ep_adam": 1000, "sch": true, "k": 3, "m": 63, "r": 1, "h": 64}

@@ -98,8 +98,8 @@ def load_dataset_2d(task_nm, data_root, ntrain=1000, ntest=200, bsz=64, normaliz
     ws_test = ws[-ntest:]
 
     train_loader = torch.utils.data.DataLoader(
-        torch.utils.data.TensorDataset(us_train, ws_train), batch_size=bsz, shuffle=True)
+        torch.utils.data.TensorDataset(us_train, ws_train), batch_size=bsz, shuffle=True, drop_last=True)
     test_loader = torch.utils.data.DataLoader(
-        torch.utils.data.TensorDataset(us_test, ws_test), batch_size=bsz, shuffle=False)
+        torch.utils.data.TensorDataset(us_test, ws_test), batch_size=bsz, shuffle=False, drop_last=True)
 
     return train_loader, test_loader

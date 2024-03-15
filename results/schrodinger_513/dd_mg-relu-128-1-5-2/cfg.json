@@ -1,1 +1,0 @@
-{"device": 0, "task": "schrodinger", "res": 513, "model": "dd_mg", "act": "relu", "seed": 2, "lr_adam": 0.001, "ep_adam": 1500, "sch": true, "k": 1, "m": 5, "r": 1, "h": 128}

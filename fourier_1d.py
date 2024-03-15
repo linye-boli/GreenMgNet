@@ -241,7 +241,6 @@ if __name__ == '__main__':
             optimizer.zero_grad()
             loss.backward() # use the l2 relative loss
             optimizer.step()
-            # scheduler.step()
             train_rl2 += loss.item()
 
         model.eval()
@@ -253,12 +252,14 @@ if __name__ == '__main__':
                 rl2 = rl2_error(w_, w)
                 test_rl2 += rl2.item()
 
-        train_rl2 = train_rl2/len(train_loader)
-        test_rl2 = test_rl2/len(test_loader)
-        sch.step(test_rl2)
+        if args.sch:
+            sch.step(test_rl2)
 
         train_rl2_hist.append(train_rl2)
         test_rl2_hist.append(test_rl2)
+
+        train_rl2 = train_rl2/len(train_loader)
+        test_rl2 = test_rl2/len(test_loader)
 
         if test_rl2 < test_rl2_best:
             test_rl2_best = test_rl2

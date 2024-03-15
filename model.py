@@ -18,8 +18,6 @@ from ops import (
     interp1d, interp2d, interp1d_rows, interp1d_cols,
     fetch_nbrs)
 
-
-
 class Rational(torch.nn.Module):
     """Rational Activation function.
     It follows:
@@ -60,7 +58,7 @@ Activations = {
 
 # A simple feedforward neural network
 class MLP(torch.nn.Module):
-    def __init__(self, layers, nonlinearity, out_nonlinearity=None, normalize=False, init=None, bias=True):
+    def __init__(self, layers, nonlinearity, out_nonlinearity=None):
         super(MLP, self).__init__()
 
         nonlinearity = Activations[nonlinearity]        
@@ -73,20 +71,8 @@ class MLP(torch.nn.Module):
         self.layers = nn.ModuleList()
 
         for j in range(self.n_layers):
-            if bias:
-                conv = nn.Conv1d(layers[j], layers[j+1], kernel_size=1)
-            else:
-                conv = nn.Conv1d(layers[j], layers[j+1], kernel_size=1, bias=False)
-
-            if init == 'zero':
-                torch.nn.init.constant(conv.weight, 0)
-            self.layers.append(conv)
-
-            if j != self.n_layers - 1:
-                if normalize:
-                    self.layers.append(nn.InstanceNorm1d(layers[j+1]))
-
-                self.layers.append(nonlinearity())
+            self.layers.append(nn.Linear(layers[j], layers[j+1]))
+            self.layers.append(nonlinearity())
 
         if out_nonlinearity is not None:
             self.layers.append(out_nonlinearity())
