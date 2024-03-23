@@ -7,11 +7,11 @@ import sys
 import argparse
 import torch.nn.functional as F
 from timeit import default_timer
-from dataset import load_dataset_1d
+from src.dataset import load_dataset_1d
 from datetime import datetime
 import torch 
 import torch.nn as nn
-from utils import rl2_error, init_records, save_hist, get_seed
+from src.utils import rl2_error, init_records, save_hist, get_seed
 import json
 from tqdm import trange
 from einops import rearrange

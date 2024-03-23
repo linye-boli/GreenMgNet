@@ -4,11 +4,11 @@ This file is the Fourier Neural Operator for 2D problem such as the Darcy Flow d
 """
 
 import argparse
-from dataset import load_dataset_2d 
+from GreenMgNet.src.dataset import load_dataset_2d 
 import torch.nn.functional as F
 import torch 
 import torch.nn as nn
-from utils import rl2_error, init_records, save_hist, get_seed
+from GreenMgNet.src.utils import rl2_error, init_records, save_hist, get_seed
 import json
 from tqdm import trange
 from einops import rearrange
