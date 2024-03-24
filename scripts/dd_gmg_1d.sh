@@ -1,4 +1,4 @@
-for s in 1 3
+for s in 6 8
 do
     for task in logarithm poisson cosine
     do
@@ -8,11 +8,11 @@ do
             do
                 for n in 9 #15 14 13 12
                 do
-                    for k in 3 5 7 
+                    for k in 1 3 5 7 
                     do
                         for m in 31 15 7 5 3 1 0
                         do
-                            python dd_gmg_1d.py --device 3 --task $task --act $act --seed $s --ep_adam 1000 --k $k --m $m --h $h --n $n --bsz 8
+                            python dd_gmg_1d.py --device 1 --task $task --act $act --seed $s --ep_adam 1000 --k $k --m $m --h $h --n $n --bsz 8
                         done 
                     done 
                 done 
