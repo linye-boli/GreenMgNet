@@ -206,17 +206,12 @@ def fetch_nbrs2d(coords, mx1=2, mx2=2, my1=2, my2=2):
     n, d = coords.shape
     
     coords_nbrs_lst = []
-    coords_max = coords.max()
 
     for i in range(-mx1, mx2+1):
         for j in range(-my1, my2+1):
             coords_nbr = coords.clone()
             coords_nbr[:,-2:-1] += i
             coords_nbr[:,-1:] += j            
-
-            coords_nbr[coords_nbr < 0] = 0
-            coords_nbr[coords_nbr > coords_max] = coords_max
-
             coords_nbrs_lst.append(coords_nbr)
 
     # return coords_nbrs_lst

@@ -306,8 +306,12 @@ class DD_Grid2D:
         self.x_hh = x_hh.to(self.device) 
         self.coords_hh = coords_hh.to(self.device)
     
-    def fetch_nbrs(self):
+    def mask_x(self, x_ij):
+        mask_ij = (x_ij[...,2] >= -1) & (x_ij[...,2] <= 1) & \
+              (x_ij[...,3] >= -1) & (x_ij[...,3] <= 1)
+        return mask_ij
 
+    def fetch_nbrs(self):
         '''
         ij_coords : host-neighbors pair index coordinates of i, (nh^2) x (2m+1)^2 x 4
         ij_idx : (4d)index of ij_coords, (nh^2) x (2m+1)^2 x 1
@@ -315,74 +319,23 @@ class DD_Grid2D:
 
         j_coords : neighbors index coordinates of i, (nh^2) x (2m+1)^2 x 2
         j_idx : (2d)index of j_coords, (nh^2) x (2m+1)^2 x 1
-        '''        
-        ij_coords = fetch_nbrs2d(
+        '''
+
+        coords_j = fetch_nbrs2d(
             self.coords_h, mx1=self.m, mx2=self.m,
             my1=self.m, my2=self.m)
         
-        self.j_coords = ij_coords
-        self.j_idx = coord2idx2d(self.j_coords, self.nh)
-        self.x_j = torch.squeeze(self.x_h[self.j_idx])
+        self.coords_j = coords_j
+        self.idx_j = coord2idx2d(coords_j, self.nh)
+        self.x_j = coords_j * self.h - 1
 
-        self.ij_coords = cat2d_nbr_coords(self.coords_h, ij_coords)
-        self.ij_idx = coord2idx4d(self.ij_coords, self.nh)
-        self.x_ij = cat2d_nbr_coords(
-            self.x_h, self.x_j)
+        coords_ij = cat2d_nbr_coords(self.coords_h, coords_j)
+        self.coords_ij = torch.clamp(coords_ij, min=0, max=self.nh-1)
+
+        x_ij = cat2d_nbr_coords(self.x_h, self.x_j)
+        self.x_ij = x_ij
+        self.mask_ij = self.mask_x(x_ij)
                
-    def fetch_local_idx(self):
-        # nH: # nodes on each axis on COARSE grid
-        # nh: # nodes on each axis on FINE grid
-        nH = self.nh 
-        nh = nH * 2 - 1
-
-        # coords_2I2J: index coordinates of nodes for which belongs to both COARSE grid and FINE grid
-        #   COARSE grid I=(X,Y), J=(X',Y')
-        #   FINE grid i=2I=(2X,2Y), j=(2X',2Y')
-        coords_2I2J = self.ij_coords * 2
-        # coords_2I_j_xeven_yfull: i=(2X,2Y), j=(2X',y')
-        coords_2I_j_xeven_yfull = interp1d_cols(coords_2I2J.float().permute(0,3,1,2)).permute(0,2,3,1).int()
-        # coords_2I_j_xeven_yodd: i=(2X,2Y), j=(2X',2Y'+1)
-        coords_2I_j_xeven_yodd = coords_2I_j_xeven_yfull[:,:,1::2]
-        # coords_2I_j_xodd_yfull: i=(2X,2Y), j=(2X'+1,y')
-        coords_2I_j_xodd_yfull = (coords_2I_j_xeven_yfull[:,:-1] + coords_2I_j_xeven_yfull[:,1:])//2
-
-        # coords_i_xeven_yeven_j : i=(2X,2Y), j=(x',y')
-        coords_i_xeven_yeven_j = interp2d(coords_2I2J.float().permute(0,3,1,2)).permute(0,2,3,1).int()
-        coords_i_xeven_yeven_j = rearrange(
-            coords_i_xeven_yeven_j, '(m n) x y c -> m n x y c', m=nH,n=nH)
-        
-        # coords_i_xeven_yeven_j : i=(2X+1,2Y), j=(x',y')
-        coords_i_xodd_yeven_j = (coords_i_xeven_yeven_j[:-1] + coords_i_xeven_yeven_j[1:])//2
-        # coords_i_xeven_yeven_j : i=(2X,2Y+1), j=(x',y')
-        coords_i_xeven_yodd_j = (coords_i_xeven_yeven_j[:,:-1] + coords_i_xeven_yeven_j[:,1:])//2
-        # coords_i_xeven_yeven_j : i=(2X+1,2Y+1), j=(x',y')
-        coords_i_xodd_yodd_j = (coords_i_xeven_yodd_j[:-1] + coords_i_xeven_yodd_j[1:])//2
-
-        idx_2I_j_xeven_yodd_i = coord2idx2d(coords_2I_j_xeven_yodd[...,:2], nh).reshape(1,-1)
-        idx_2I_j_xeven_yodd_j = coord2idx2d(coords_2I_j_xeven_yodd[...,2:], nh).reshape(1,-1)
-
-        idx_2I_j_xodd_yfull_i = coord2idx2d(coords_2I_j_xodd_yfull[...,:2], nh).reshape(1,-1)
-        idx_2I_j_xodd_yfull_j = coord2idx2d(coords_2I_j_xodd_yfull[...,2:], nh).reshape(1,-1)
-        
-        idx_i_xodd_yeven_j_i = coord2idx2d(coords_i_xodd_yeven_j[...,:2], nh).reshape(1,-1)
-        idx_i_xodd_yeven_j_j = coord2idx2d(coords_i_xodd_yeven_j[...,2:], nh).reshape(1,-1)
-        
-        idx_i_xeven_yodd_j_i = coord2idx2d(coords_i_xeven_yodd_j[...,:2], nh).reshape(1,-1)
-        idx_i_xeven_yodd_j_j = coord2idx2d(coords_i_xeven_yodd_j[...,2:], nh).reshape(1,-1)
-
-        idx_i_xodd_yodd_j_i = coord2idx2d(coords_i_xodd_yodd_j[...,:2], nh).reshape(1,-1)
-        idx_i_xodd_yodd_j_j = coord2idx2d(coords_i_xodd_yodd_j[...,2:], nh).reshape(1,-1)
-
-        idx_2I_j_xeven_yodd = torch.concat([idx_2I_j_xeven_yodd_i, idx_2I_j_xeven_yodd_j], axis=0)
-        idx_2I_j_xodd_yfull = torch.concat([idx_2I_j_xodd_yfull_i, idx_2I_j_xodd_yfull_j], axis=0)
-        idx_i_xodd_yeven_j = torch.concat([idx_i_xodd_yeven_j_i, idx_i_xodd_yeven_j_j], axis=0)
-        idx_i_xeven_yodd_j = torch.concat([idx_i_xeven_yodd_j_i, idx_i_xeven_yodd_j_j], axis=0)
-        idx_i_xodd_yodd_j = torch.concat([idx_i_xodd_yodd_j_i, idx_i_xodd_yodd_j_j], axis=0)
-        
-        idx_local_even = torch.concat([idx_2I_j_xeven_yodd, idx_2I_j_xodd_yfull], axis=1)
-        idx_local_odd = torch.concat([idx_i_xodd_yeven_j, idx_i_xeven_yodd_j, idx_i_xodd_yodd_j], axis=1)
-        return idx_local_even, idx_local_odd
-
     def fetch_K_local_x(self):
         nH = self.nh 
         x_2I2J = self.x_ij
@@ -391,6 +344,10 @@ class DD_Grid2D:
 
         # x_2I_j_xeven_yodd: i=(2X,2Y), j=(2X',2Y'+1)
         x_2I_j_xeven_yodd = x_2Ij[:,:,::2,1::2]
+        mask_2I_j_xeven_yodd = self.mask_x(x_2I_j_xeven_yodd)
+        coords_2I_j_xeven_yodd =  ((x_2I_j_xeven_yodd + 1)/self.h * 2).int()[mask_2I_j_xeven_yodd].T
+        pts_2I_j_xeven_yodd = (x_2I_j_xeven_yodd, coords_2I_j_xeven_yodd, mask_2I_j_xeven_yodd)
+
         # x_2I_j_xeven_yodd: i=(2X,2Y), j=(2X',y')
         x_2I_j_xodd_yfull = x_2Ij[:,:,1::2]
 
