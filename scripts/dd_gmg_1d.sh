@@ -1,12 +1,12 @@
-for s in 6 8
+for s in 5 6 7 8 9
 do
-    for task in logarithm poisson cosine
+    for task in expdecay poisson doublesingularity
     do
         for act in rational 
         do
             for h in 64
             do
-                for n in 9 #15 14 13 12
+                for n in 9 10 #15 14 13 12
                 do
                     for k in 1 3 5 7 
                     do

@@ -1,6 +1,6 @@
 for s in 5 7 9 #0 2 4
 do
-    for task in logarithm poisson cosine
+    for task in poisson
     do
         for act in rational 
         do
