@@ -180,8 +180,6 @@ class DD_GMG1D:
                 x_i_odd_j, _, mask_i_odd_j = self.pts_local[l][1]
                 K_local_even = torch.zeros_like(mask_2I_j_odd, dtype=torch.float)
                 K_local_odd = torch.zeros_like(mask_i_odd_j, dtype=torch.float)
-                # import pdb 
-                # pdb.set_trace()
                 K_local_even[mask_2I_j_odd] += self.kernel(x_2I_j_odd[mask_2I_j_odd]).squeeze()
                 K_local_odd[mask_i_odd_j] += self.kernel(x_i_odd_j[mask_i_odd_j]).squeeze()
                 K_locals.append([K_local_even, K_local_odd])
