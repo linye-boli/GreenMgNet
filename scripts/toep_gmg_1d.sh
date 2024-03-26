@@ -1,4 +1,4 @@
-for s in 0 1 2 3 4
+for s in 0 1 2 3 4 5 6 7 8 9
 do
     for task in cosine logarithm
     do
@@ -6,13 +6,13 @@ do
         do
             for h in 64
             do
-                for n in 9
+                for n in 9 10
                 do
                     for k in 7 5 3 1 0
                     do
-                        for m in 31 15 7 3 0
+                        for m in 31 15 7 5 3 1 0
                         do
-                            python toep_gmg_1d.py --device 2 --task $task --act $act --seed $s --ep_adam 1000 --k $k --m $m --h $h --n $n --bsz 8
+                            python toep_gmg_1d.py --device 1 --task $task --act $act --seed $s --ep_adam 1000 --k $k --m $m --h $h --n $n --bsz 8
                         done 
                     done 
                 done 
