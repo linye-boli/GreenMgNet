@@ -176,6 +176,10 @@ class Toep_Grid2D:
         x_h, coords_h = grid2d_coords(nh)
         self.x_h = x_h.to(self.device)
         self.coords_h = coords_h.to(self.device)
+
+        x_h_, _ = grid2d_coords(self.nh)
+        self.mask = ((x_h_[:,0]**2 + x_h_[:,1]**2) < 1).to(self.device)
+
     
     def fetch_nbrs(self):
         nh = 2*self.nh-1
@@ -320,6 +324,10 @@ class Toep_GMG2D:
         self.K_h = K_h
     
     def fft_kint(self, f_h):
+        nh = self.ml_grids[0].nh
+        mask_h = self.ml_grids[0].mask
+        f_h = f_h.reshape(-1,nh, nh)
+
         hh = self.ml_grids[0].hh
         K = self.K_h[None]
         f_ = f_h
@@ -330,8 +338,9 @@ class Toep_GMG2D:
         f[...,:l,:l] += f_
         K_ft = torch.fft.rfft2(K, s=(2*l,2*l))
         f_ft = torch.fft.rfft2(f, s=(2*l,2*l))
-        u = torch.fft.irfft2(K_ft*f_ft)[..., l-1:-1,l-1:-1]
-        return hh * u
+        u = hh * torch.fft.irfft2(K_ft*f_ft)[..., l-1:-1,l-1:-1]
+        u_h = u.reshape(-1, nh*nh) * mask_h
+        return u_h
 
 if __name__ == '__main__':
 

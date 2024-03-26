@@ -161,10 +161,16 @@ class GreenNet2D:
         self.K_hh = K_hh
         
     def full_kint(self, fh):
+        '''
+        fh : bsz x (nh x nh)
+        uh : bsz x (nh x nh)
+        '''
+        fh = fh.T
         hh = self.grid.hh
         nh = self.grid.nh
         Khh = self.K_hh.reshape(nh*nh, nh*nh)
         uh = hh * (Khh @ fh) 
+        uh = uh.T
         return uh
     
     def rand_sub(self):
@@ -177,13 +183,23 @@ class GreenNet2D:
         self.K_hh = torch.squeeze(K_hh)
 
     def sub_kint(self, fh):
+        '''
+        fh : bsz x (nh x nh)
+        uh : bsz x (nh x nh)
+        '''
+        fh = fh.T
         hh = self.grid.hh
-        nh = self.grid.nh
         Khh = self.K_hh.reshape(self.sub_num,-1)
         uh = hh * (Khh @ fh)
+        uh = uh.T
         return uh
     
     def evalint_batch(self, fh):
+        '''
+        fh : bsz x (nh x nh)
+        uh : bsz x (nh x nh)
+        '''
+        fh = fh.T        
         hh = self.grid.hh
         nh = self.grid.nh
         pts_batch = torch.split(self.pts.reshape(nh*nh, nh, nh, 4), 64)
@@ -193,5 +209,5 @@ class GreenNet2D:
             K_sub = self.kernel(pts).detach().reshape(bsz, -1)
             u_sub = hh * (K_sub @ fh)
             uh.append(u_sub)     
-        
-        return torch.cat(uh)
+        uh = torch.cat(uh).T
+        return uh

@@ -460,7 +460,7 @@ class DD_GMG2D:
         restrict f into multi-level
         '''
         nh = self.ml_grids[0].nh
-        f_h = rearrange(f_h, '(m n) b->b 1 m n', m=nh, n=nh)
+        f_h = rearrange(f_h, 'b (m n)->b 1 m n', m=nh, n=nh)
         ml_f = [f_h]
         for _ in range(self.k):
             f_h = restrict2d(f_h)
@@ -635,7 +635,7 @@ class DD_GMG2D:
             
             u_h = u_h_
 
-        return rearrange(u_h, 'b m n -> (m n) b')
+        return rearrange(u_h, 'b m n -> b (m n)')
 
     def twolevel_kint(self, corr_odd=True):
         assert len(self.ml_grids) == 2
@@ -668,18 +668,9 @@ class DD_GMG2D:
             u_h_ = u_h_ + u_corr_
 
         u_h = u_h_
-        return rearrange(u_h, 'b m n -> (m n) b')
+        return rearrange(u_h, 'b m n -> b (m n)')
 
-    def ml_kint_wo(self):
-        u_h = self.coarest_full_kint()
-        nh = self.ml_grids[0].nh 
-        nH = self.ml_grids[-1].nh 
-        K_IJ = self.K_HH[self.ml_grids[-1].ij_idx]
-        K_IJ = K_IJ.reshape(nH,nH,2*self.m+1,2*self.m+1)
-
-        for l in range(1, self.k+1):
-            u_h = interp2d(u_h[:,None])[:,0]
-        return rearrange(u_h, 'b m n -> (m n) b', m=nh, n=nh)
+    
 
 if __name__ == '__main__':
     from einops import repeat
