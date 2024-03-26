@@ -249,7 +249,7 @@ class DD_GMG1D:
                 K_corr_odd = (K_local_odd[:,1:-1] - K_local_odd_)[mask_odd[:,1:-1]]
 
                 # correct even 
-                K_corr_even_sparse = torch.sparse_coo_tensor(coords_even, K_corr_even,(nh,nh))            
+                K_corr_even_sparse = torch.sparse_coo_tensor(coords_even, K_corr_even,(nh,nh))
                 u_corr_ = torch.sparse.mm(K_corr_even_sparse, f_h).T
                 u_corr_ = hh * injection1d(u_corr_[None,None])[0,0]
                 u_h_ = u_h + u_corr_
@@ -306,6 +306,7 @@ class DD_Grid2D:
         x_hh, coords_hh = grid4d_coords(self.nh)
         self.x_hh = x_hh.to(self.device) 
         self.coords_hh = coords_hh.to(self.device)
+        self.mask_hh = self.mask_x(x_hh)
     
     def mask_x(self, x_ij):
         mask_ij = (x_ij[...,2] >= -1) & (x_ij[...,2] <= 1) & \
@@ -339,8 +340,8 @@ class DD_Grid2D:
         self.mask_ij = self.mask_x(self.x_ij)
     
     def flat_coords(self, coords):
-        coords_i = coord2idx2d(coords[...,-4:-2], self.nh)
-        coords_j = coord2idx2d(coords[...,-2:], self.nh)
+        coords_i = coord2idx2d(coords[...,-4:-2], 2*self.nh-1)
+        coords_j = coord2idx2d(coords[...,-2:], 2*self.nh-1)
         return torch.stack([coords_i, coords_j])        
 
     def fetch_K_local_pts(self):
@@ -354,6 +355,7 @@ class DD_Grid2D:
         mask_2I_j_xeven_yodd = self.mask_x(x_2I_j_xeven_yodd)
         coords_2I_j_xeven_yodd =  self.flat_coords(
             ((x_2I_j_xeven_yodd + 1)/self.h * 2).int()[mask_2I_j_xeven_yodd])
+        # coords_2I_j_xeven_yodd =  ((x_2I_j_xeven_yodd + 1)/self.h * 2).int()
         pts_2I_j_xeven_yodd = (x_2I_j_xeven_yodd, coords_2I_j_xeven_yodd, mask_2I_j_xeven_yodd)
 
         # x_2I_j_xeven_yodd: i=(2X,2Y), j=(2X',y')
@@ -361,31 +363,33 @@ class DD_Grid2D:
         mask_2I_j_xodd_yfull = self.mask_x(x_2I_j_xodd_yfull)
         coords_2I_j_xodd_yfull =  self.flat_coords(
             ((x_2I_j_xodd_yfull + 1)/self.h * 2).int()[mask_2I_j_xodd_yfull])
+        # coords_2I_j_xodd_yfull = ((x_2I_j_xodd_yfull + 1)/self.h * 2).int()
         pts_2I_j_xodd_yfull = (x_2I_j_xodd_yfull, coords_2I_j_xodd_yfull, mask_2I_j_xodd_yfull)
 
         # x_i_xodd_yeven_j: i=(2X+1,2Y), j=(x',y')
         x_i_xodd_yeven_j = (x_2Ij[:-1] + x_2Ij[1:])/2
         mask_i_xodd_yeven_j = self.mask_x(x_i_xodd_yeven_j)
         coords_i_xodd_yeven_j  =  self.flat_coords(
-            ((x_i_xodd_yeven_j  + 1)/self.h * 2).int()[mask_i_xodd_yeven_j ])
+            ((x_i_xodd_yeven_j[:,:,1:-1]  + 1)/self.h * 2).int()[mask_i_xodd_yeven_j[:,:,1:-1]])
         pts_i_xodd_yeven_j  = (x_i_xodd_yeven_j , coords_i_xodd_yeven_j , mask_i_xodd_yeven_j)
 
         # x_i_xeven_yodd_j: i=(2X,2Y+1), j=(x',y')
         x_i_xeven_yodd_j = (x_2Ij[:,:-1] + x_2Ij[:,1:])/2
         mask_i_xeven_yodd_j = self.mask_x(x_i_xeven_yodd_j)
         coords_i_xeven_yodd_j  = self.flat_coords(
-            ((x_i_xeven_yodd_j  + 1)/self.h * 2).int()[mask_i_xeven_yodd_j ])
+            ((x_i_xeven_yodd_j[:,:,:,1:-1]  + 1)/self.h * 2).int()[mask_i_xeven_yodd_j[:,:,:,1:-1]])
         pts_i_xeven_yodd_j  = (x_i_xeven_yodd_j , coords_i_xeven_yodd_j , mask_i_xeven_yodd_j)
 
         # x_i_xodd_yodd_j: i=(2X+1,2Y+1), j=(x',y')
         x_i_xodd_yodd_j = (x_i_xeven_yodd_j[:-1] + x_i_xeven_yodd_j[1:])/2
         mask_i_xodd_yodd_j = self.mask_x(x_i_xodd_yodd_j)
         coords_i_xodd_yodd_j  =  self.flat_coords(
-            ((x_i_xodd_yodd_j  + 1)/self.h * 2).int()[mask_i_xodd_yodd_j ])
+            ((x_i_xodd_yodd_j[:,:,1:-1,1:-1]  + 1)/self.h * 2).int()[mask_i_xodd_yodd_j[:,:,1:-1,1:-1]])
         pts_i_xodd_yodd_j  = (x_i_xodd_yodd_j , coords_i_xodd_yodd_j , mask_i_xodd_yodd_j)
 
         return pts_2I_j_xeven_yodd, pts_2I_j_xodd_yfull, pts_i_xodd_yeven_j, pts_i_xeven_yodd_j, pts_i_xodd_yodd_j
 
+    
 class DD_GMG2D:
     def __init__(self, n, m, k, kernel, device):
         '''
@@ -544,11 +548,11 @@ class DD_GMG2D:
         # Kernel values for i=(2X,2Y), j=(x',y')
         K_i_xeven_yeven_j = K_2Ij
         # Kernel values for i=(2X,2Y), j=(x',y')
-        K_i_xodd_yeven_j_ = (K_i_xeven_yeven_j[:-1] + K_i_xeven_yeven_j[1:])/2
+        K_i_xodd_yeven_j_ = (K_i_xeven_yeven_j[1:,:,:-2] + K_i_xeven_yeven_j[:-1,:,2:])/2
         # Kernel values for i=(2X,2Y), j=(x',y')
-        K_i_xeven_yodd_j_ = (K_i_xeven_yeven_j[:,:-1] + K_i_xeven_yeven_j[:,1:])/2
+        K_i_xeven_yodd_j_ = (K_i_xeven_yeven_j[:,:-1,:,2:] + K_i_xeven_yeven_j[:,1:,:,:-2])/2
         # Kernel values for i=(2X,2Y), j=(x',y')
-        K_i_xodd_yodd_j_ = (K_i_xeven_yodd_j_[:-1] + K_i_xeven_yodd_j_[1:])/2
+        K_i_xodd_yodd_j_ = (K_i_xeven_yodd_j_[:-1,:,2:] + K_i_xeven_yodd_j_[1:,:,:-2])/2
 
         K_local_even = [K_2I_j_xeven_yodd_, K_2I_j_xodd_yfull_]
         K_local_odd = [K_i_xodd_yeven_j_, K_i_xeven_yodd_j_, K_i_xodd_yodd_j_]
@@ -595,6 +599,7 @@ class DD_GMG2D:
                 # calculate difference
                 _, coords_2I_j_xeven_yodd, mask_2I_j_xeven_yodd = self.pts_local[l-1][0]
                 _, coords_2I_j_xodd_yfull, mask_2I_j_xodd_yfull = self.pts_local[l-1][1]
+
                 K_corr_2I_j_xeven_yodd = (K_local_even[0] - K_local_even_[0])[mask_2I_j_xeven_yodd]
                 K_corr_2I_j_xodd_yfull = (K_local_even[1] - K_local_even_[1])[mask_2I_j_xodd_yfull]
                 K_corr_even = torch.cat([K_corr_2I_j_xeven_yodd, K_corr_2I_j_xodd_yfull])
@@ -603,16 +608,17 @@ class DD_GMG2D:
                 _, coords_i_xodd_yeven_j, mask_i_xodd_yeven_j = self.pts_local[l-1][2]
                 _, coords_i_xeven_yodd_j, mask_i_xeven_yodd_j = self.pts_local[l-1][3]
                 _, coords_i_xodd_yodd_j, mask_i_xodd_yodd_j = self.pts_local[l-1][4]
-                K_corr_i_xodd_yeven_j = (K_local_odd[0] - K_local_odd_[0])[mask_i_xodd_yeven_j]
-                K_corr_i_xeven_yodd_j = (K_local_odd[1] - K_local_odd_[1])[mask_i_xeven_yodd_j]
-                K_corr_i_xodd_yodd_j = (K_local_odd[2] - K_local_odd_[2])[mask_i_xodd_yodd_j]
+
+                K_corr_i_xodd_yeven_j = (K_local_odd[0][:,:,1:-1]  - K_local_odd_[0])[mask_i_xodd_yeven_j[:,:,1:-1]]
+                K_corr_i_xeven_yodd_j = (K_local_odd[1][:,:,:,1:-1] - K_local_odd_[1])[mask_i_xeven_yodd_j[:,:,:,1:-1]]
+                K_corr_i_xodd_yodd_j = (K_local_odd[2][:,:,1:-1,1:-1] - K_local_odd_[2])[mask_i_xodd_yodd_j[:,:,1:-1,1:-1]]
                 K_corr_odd = torch.cat([K_corr_i_xodd_yeven_j, K_corr_i_xeven_yodd_j, K_corr_i_xodd_yodd_j])
                 coords_odd = torch.cat([coords_i_xodd_yeven_j, coords_i_xeven_yodd_j, coords_i_xodd_yodd_j], axis=1)
 
                 # correct even
                 K_corr_even_sparse = torch.sparse_coo_tensor(coords_even, K_corr_even,(nh**2,nh**2))
                 u_corr_ = torch.sparse.mm(K_corr_even_sparse, f_h).T.reshape(-1,nh,nh)
-                u_corr_ = hh * injection2d(u_corr_[:,None])[:,0]
+                u_corr_ = hh*injection2d(u_corr_[:,None])[:,0]
                 u_h_ = u_h + u_corr_
                 u_h_ = interp2d(u_h_[:,None])[:,0]
 
@@ -629,6 +635,39 @@ class DD_GMG2D:
             
             u_h = u_h_
 
+        return rearrange(u_h, 'b m n -> (m n) b')
+
+    def twolevel_kint(self, corr_odd=True):
+        assert len(self.ml_grids) == 2
+        fine_grid = self.ml_grids[0]
+        coarse_grid = self.ml_grids[1]
+        u_h = self.coarest_full_kint()
+
+        fine_grid.init_grid_hh()
+        nh = fine_grid.nh
+        hh = fine_grid.hh
+        mask_hh = fine_grid.mask_hh.reshape(nh,nh,nh,nh)
+        K_hh = self.kernel(fine_grid.x_hh).reshape(nh,nh,nh,nh)
+
+        nH = coarse_grid.nh
+        K_HH = self.kernel(coarse_grid.x_hh).reshape(nH,nH,nH,nH)
+
+        f_h = self.ml_f[0].reshape(-1,nh*nh).T
+
+        K_Hh_ = interp2d(K_HH)
+        K_corr_even = ((K_hh[::2,::2] - K_Hh_)*mask_hh[::2,::2]).reshape(nH**2, nh**2)
+        u_corr_ = hh*torch.mm(K_corr_even, f_h).T.reshape(-1,nH,nH)
+        u_h_ = u_h + u_corr_
+        u_h_ = interp2d(u_h_[:,None])[:,0]
+
+        K_hh_ = rearrange(interp2d(rearrange(K_hh[::2,::2], 'm n x y -> x y m n')), 'x y m n -> m n x y')
+        K_corr_odd = ((K_hh - K_hh_)*mask_hh).reshape(nh**2, nh**2)
+
+        if corr_odd:
+            u_corr_ = hh*torch.mm(K_corr_odd, f_h).T.reshape(-1,nh,nh)
+            u_h_ = u_h_ + u_corr_
+
+        u_h = u_h_
         return rearrange(u_h, 'b m n -> (m n) b')
 
     def ml_kint_wo(self):
