@@ -1,4 +1,4 @@
-for s in 0
+for s in 0 1 2 3 4 
 do
     for task in cosine logarithm
     do
