@@ -116,11 +116,12 @@ def load_dataset_2d(
 
     if normalize:
         U_mean, U_std = U_train.mean(), U_train.std()
+        F_mean, F_std = F_train.mean(), F_train.std()
         U_train = (U_train - U_mean) / U_std
         U_test = (U_test - U_mean) / U_std
 
-        F_train = (F_train - U_mean) / U_std
-        F_test = (F_test - U_mean) / U_std
+        F_train = (F_train - F_mean) / F_std
+        F_test = (F_test - F_mean) / F_std
 
     U_train = torch.tensor(U_train).float()
     F_train = torch.tensor(F_train).float()

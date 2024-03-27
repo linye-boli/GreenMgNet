@@ -4,7 +4,7 @@ do
     do
         for act in relu rational
         do
-            for h in 64
+            for h in 50
             do
                 for n in 12
                 do
@@ -12,7 +12,7 @@ do
                     do
                         for m in 31 15 7 5 3 1 0
                         do
-                            python toep_gmg_1d.py --device 1 --task $task --act $act --seed $s --ep_adam 1000 --k $k --m $m --h $h --n $n --bsz 8
+                            python toep_gmg_1d.py --device 1 --task $task --act $act --seed $s --ep_adam 2500 --k $k --m $m --h $h --n $n --bsz 20 --sch
                         done 
                     done 
                 done 
