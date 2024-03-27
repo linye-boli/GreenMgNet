@@ -6,9 +6,9 @@ do
         do
             for h in 64
             do
-                for n in 12 #15 14 13 12
+                for n in 10 #15 14 13 12
                 do
-                    for k in 3 5 7
+                    for k in 1 3 5 7
                     do
                         for m in 15 7 5 3 1 0
                         do

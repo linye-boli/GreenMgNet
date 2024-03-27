@@ -6,7 +6,7 @@ do
         do
             for h in 64
             do
-                for n in 9 10
+                for n in 10
                 do
                     for k in 7 5 3 1 0
                     do
