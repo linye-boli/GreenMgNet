@@ -93,8 +93,6 @@ def load_dataset_2d(
         task_nm, data_root, r,
         train_post='2.00e-01.mat', test_post='2.00e-01.mat',
         ntrain=1000, ntest=200, bsz=64, normalize=False, odd=True):
-    
-
 
     F_train_path = os.path.join(data_root, '_'.join(['fdisk', '513x513', train_post]))
     U_train_path = os.path.join(data_root, '_'.join([task_nm, '513x513', train_post]))
@@ -119,9 +117,8 @@ def load_dataset_2d(
         U_train = (U_train - U_mean) / U_std
         U_test = (U_test - U_mean) / U_std
 
-        F_mean, F_std = F_train.mean(), F_train.std()
-        F_train = (F_train - F_mean) / F_std
-        F_test = (F_test - F_mean) / F_std
+        F_train = (F_train - U_mean) / U_std
+        F_test = (F_test - U_mean) / U_std
 
     U_train = torch.tensor(U_train).float()
     F_train = torch.tensor(F_train).float()

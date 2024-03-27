@@ -1,1 +1,0 @@
-{"device": 0, "task": "lograithm", "train_post": "3.00e-01", "test_post": "3.00e-01", "seed": 1, "lr_adam": 0.001, "ep_adam": 1000, "sch": false, "bsz": 8, "n": 9, "act": "rational", "h": 64}

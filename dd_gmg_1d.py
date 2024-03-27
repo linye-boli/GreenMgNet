@@ -55,7 +55,6 @@ if __name__ == '__main__':
     ################################################################
     get_seed(args.seed, printout=False)
 
-    batch_size = args.bsz
     lr_adam = args.lr_adam
     epochs = args.ep_adam
 
@@ -98,7 +97,7 @@ if __name__ == '__main__':
     # read data
     ################################################################
     r = 15 - args.n
-    train_loader, test_loader = load_dataset_1d(args.task, data_root, r)
+    train_loader, test_loader = load_dataset_1d(args.task, data_root, r, bsz=args.bsz)
 
     ################################################################
     # build model
