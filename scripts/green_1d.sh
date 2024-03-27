@@ -4,11 +4,11 @@ do
     do
         for task in expdecay poisson doubleholes cosine logarithm
         do
-            for h in 64
+            for h in 50
             do
                 for n in 12
                 do
-                    python green_1d.py --device 3 --task $task --act $act --seed $s --ep_adam 1000 --h $h --n $n --bsz 8
+                    python green_1d.py --device 3 --task $task --act $act --seed $s --ep_adam 2500 --h $h --n $n --bsz 20 --sch
                 done
             done
         done

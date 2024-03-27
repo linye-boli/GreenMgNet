@@ -97,7 +97,7 @@ if __name__ == '__main__':
     # read data
     ################################################################
     r = 12 - args.n
-    train_loader, test_loader = load_dataset_1d(args.task, data_root, r)
+    train_loader, test_loader = load_dataset_1d(args.task, data_root, r, bsz=args.bsz, normalize=True)
 
     ################################################################
     # build model
@@ -107,7 +107,9 @@ if __name__ == '__main__':
     model = GreenNet1D(n=args.n, kernel=kernel, device=device)
 
     opt_adam = torch.optim.Adam(kernel.parameters(), lr=lr_adam)
-    sch = torch.optim.lr_scheduler.ExponentialLR(opt_adam, gamma=0.95)
+    step_size = 100
+    gamma = 0.9
+    sch = torch.optim.lr_scheduler.StepLR(opt_adam, step_size=step_size, gamma=gamma)
 
     ################################################################
     # training and evaluation
