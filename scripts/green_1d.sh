@@ -2,7 +2,7 @@ for s in 0 1 2 3 4
 do
     for act in relu
     do
-        for task in expdecay poisson doublesingularity cosine logarithm
+        for task in expdecay poisson doubleholes cosine logarithm
         do
             for h in 64
             do

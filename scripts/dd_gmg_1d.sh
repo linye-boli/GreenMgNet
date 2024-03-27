@@ -2,7 +2,7 @@ for s in 0 1 2 3 4
 do
     for act in relu rational 
     do
-        for task in expdecay poisson doublesingularity
+        for task in expdecay poisson doubleholes
         do
             for h in 64
             do

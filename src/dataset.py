@@ -44,11 +44,11 @@ def load_dataset_1d(
     # F : bsz x 1 x 16385
     # U : bsz x 1 x 16385
 
-    F_train_path = os.path.join(data_root, '_'.join(['f1d', '32769', train_post]))
-    U_train_path = os.path.join(data_root, '_'.join([task_nm, '32769', train_post]))
+    F_train_path = os.path.join(data_root, '_'.join(['f1d', '4097', train_post]))
+    U_train_path = os.path.join(data_root, '_'.join([task_nm, '4097', train_post]))
 
-    F_test_path = os.path.join(data_root, '_'.join(['f1d', '32769', test_post]))
-    U_test_path = os.path.join(data_root, '_'.join([task_nm, '32769', test_post]))
+    F_test_path = os.path.join(data_root, '_'.join(['f1d', '4097', test_post]))
+    U_test_path = os.path.join(data_root, '_'.join([task_nm, '4097', test_post]))
     
     F_train = load_mat1d(F_train_path, 'F', ntrain, True)[::2**r]
     U_train = load_mat1d(U_train_path, 'U', ntrain, True)[::2**r]
@@ -94,11 +94,11 @@ def load_dataset_2d(
         train_post='2.00e-01.mat', test_post='2.00e-01.mat',
         ntrain=100, ntest=100, bsz=64, normalize=False, odd=True):
 
-    F_train_path = os.path.join(data_root, '_'.join(['fdisk', '513x513', train_post]))
-    U_train_path = os.path.join(data_root, '_'.join([task_nm, '513x513', train_post]))
+    F_train_path = os.path.join(data_root, '_'.join(['fdisk', '65x65', train_post]))
+    U_train_path = os.path.join(data_root, '_'.join([task_nm, '65x65', train_post]))
 
-    F_test_path = os.path.join(data_root, '_'.join(['fdisk', '513x513', test_post]))
-    U_test_path = os.path.join(data_root, '_'.join([task_nm, '513x513', test_post]))
+    F_test_path = os.path.join(data_root, '_'.join(['fdisk', '65x65', test_post]))
+    U_test_path = os.path.join(data_root, '_'.join([task_nm, '65x65', test_post]))
     
     F_train = load_mat2d(F_train_path, 'F', ntrain, True)[:,::2**r,::2**r]
     U_train = load_mat2d(U_train_path, 'U', ntrain, True)[:,::2**r,::2**r]
