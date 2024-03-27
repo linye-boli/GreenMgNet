@@ -1,4 +1,4 @@
-for s in 0 1 2 3 4 5 6 7 8 9
+for s in 0 1 2 3 4
 do
     for task in expdecay poisson doublesingularity
     do
@@ -6,11 +6,11 @@ do
         do
             for h in 64
             do
-                for n in 9 10 #15 14 13 12
+                for n in 10 #15 14 13 12
                 do
-                    for k in 1 3 5 7 
+                    for k in 3 5 7 
                     do
-                        for m in 31 15 7 5 3 1 0
+                        for m in 5 3 1 0 31 15 7
                         do
                             python dd_gmg_1d.py --device 3 --task $task --act $act --seed $s --ep_adam 1000 --k $k --m $m --h $h --n $n --bsz 8
                         done 

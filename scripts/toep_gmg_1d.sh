@@ -1,8 +1,8 @@
-for s in 0 1 2 3 4 5 6 7 8 9
+for s in 0 1 2 3 4
 do
     for task in cosine logarithm
     do
-        for act in rational
+        for act in relu
         do
             for h in 64
             do
