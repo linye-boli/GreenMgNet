@@ -1,12 +1,12 @@
-for s in 0 1 2 3 4
+for s in 0
 do
     for task in cosine logarithm
     do
-        for act in relu
+        for act in relu rational
         do
             for h in 64
             do
-                for n in 9 10
+                for n in 12
                 do
                     for k in 7 5 3 1 0
                     do

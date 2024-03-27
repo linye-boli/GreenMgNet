@@ -38,7 +38,7 @@ def load_mat2d(data_path, key, N, train=True):
 def load_dataset_1d(
         task_nm, data_root, r,
         train_post='3.00e-01.mat', test_post='3.00e-01.mat',
-        ntrain=1000, ntest=200, bsz=64, normalize=False, odd=True):
+        ntrain=100, ntest=100, bsz=64, normalize=False, odd=True):
     
     # F, U = next(iter(train_loader))
     # F : bsz x 1 x 16385
@@ -92,7 +92,7 @@ def load_dataset_1d(
 def load_dataset_2d(
         task_nm, data_root, r,
         train_post='2.00e-01.mat', test_post='2.00e-01.mat',
-        ntrain=1000, ntest=200, bsz=64, normalize=False, odd=True):
+        ntrain=100, ntest=100, bsz=64, normalize=False, odd=True):
 
     F_train_path = os.path.join(data_root, '_'.join(['fdisk', '513x513', train_post]))
     U_train_path = os.path.join(data_root, '_'.join([task_nm, '513x513', train_post]))
