@@ -111,14 +111,13 @@ if __name__ == '__main__':
         x2 = pts[...,2]
         y2 = pts[...,3]
 
-        a = (x1 - x2)**2 + (y1 - y2)**2
-        b = (x1*y2 - x2*y1)**2 + (x1*x2 + y1*y2 - 1)**2
-        mask = ((x1**2+y1**2) < 1) & ((x2**2+y2**2) < 1)
+        mask = ((x1**2+y1**2) < 1) & ((x2**2+y2**2) < 1)    
 
-        k =  torch.nan_to_num(1/(4*torch.pi) * torch.log(a/b), neginf=-1) * mask
-
+        k = 1/(4*torch.pi) * torch.log(
+            ((x1 - x2)**2 + (y1-y2)**2) / \
+            ((x1*y2-x2*y1)**2 + (x1*x2+y1*y2-1)**2))
+        k = torch.nan_to_num(k, neginf=-1) * mask
         return k
-    
     
 
     layers = [in_channels] + [hidden_channels]*4 + [out_channels]
