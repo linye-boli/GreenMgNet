@@ -104,9 +104,26 @@ if __name__ == '__main__':
     ################################################################
     # build model
     ################################################################
+
+    def DiskPoisson(pts):
+        x1 = pts[...,0]
+        y1 = pts[...,1]
+        x2 = pts[...,2]
+        y2 = pts[...,3]
+
+        a = (x1 - x2)**2 + (y1 - y2)**2
+        b = (x1*y2 - x2*y1)**2 + (x1*x2 + y1*y2 - 1)**2
+        mask = ((x1**2+y1**2) < 1) & ((x2**2+y2**2) < 1)
+
+        k =  torch.nan_to_num(1/(4*torch.pi) * torch.log(a/b), neginf=-1) * mask
+
+        return k
+    
+    
+
     layers = [in_channels] + [hidden_channels]*4 + [out_channels]
     kernel = MLP(layers, nonlinearity=args.act).to(device)
-    model = DD_GMG2D(n=args.n, m=args.m, k=args.k, kernel=kernel, device=device)
+    model = DD_GMG2D(n=args.n, m=args.m, k=args.k, kernel=DiskPoisson, device=device)
 
     opt_adam = torch.optim.Adam(kernel.parameters(), lr=lr_adam)
     sch = torch.optim.lr_scheduler.ExponentialLR(opt_adam, gamma=0.95)
@@ -124,7 +141,7 @@ if __name__ == '__main__':
     for ep in pbar:
         pbar.set_description("train l2 {:.2e} - lr {:.4e}".format(train_rl2, sch.get_last_lr()[0]))
                 
-        model.kernel.train()
+        # model.kernel.train()
         train_rl2 = 0
         for f, u in train_loader:
             # fetch data batch 
@@ -139,12 +156,15 @@ if __name__ == '__main__':
             # calc kernel integral
             u_ = model.ml_kint()
 
+            import pdb 
+            pdb.set_trace()
+
             # calc loss 
             loss = rl2_error(u_, u)
 
-            opt_adam.zero_grad()
-            loss.backward() # use the l2 relative loss
-            opt_adam.step()
+            # opt_adam.zero_grad()
+            # loss.backward() # use the l2 relative loss
+            # opt_adam.step()
             train_rl2 += loss.item()
         
         if args.sch:
