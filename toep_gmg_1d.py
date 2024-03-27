@@ -48,6 +48,7 @@ if __name__ == '__main__':
     parser.add_argument('--h', type=int, default=50,
                         help='hidden channel for mlp')
     args = parser.parse_args()
+    print(args)
 
     ################################################################
     #  configurations
