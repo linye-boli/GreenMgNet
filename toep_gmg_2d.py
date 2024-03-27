@@ -96,7 +96,7 @@ if __name__ == '__main__':
     ################################################################
     # read data
     ################################################################
-    r = 9 - args.n
+    r = 6 - args.n
     train_loader, test_loader = load_dataset_2d(args.task, data_root, r)
 
     ################################################################
@@ -128,9 +128,6 @@ if __name__ == '__main__':
             u, f = u.to(device), f.to(device)
             u = torch.squeeze(u)
             f = torch.squeeze(f)
-
-            import pdb 
-            pdb.set_trace()
 
             # eval kernel
             model.eval_ml_K()
