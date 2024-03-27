@@ -136,10 +136,6 @@ if __name__ == '__main__':
             # u_ = model.sub_kint(f)
             # # calc loss 
             # loss = rl2_error(u_, u[:,model.sub])
-            
-            if ep == 10:
-                import pdb 
-                pdb.set_trace()
 
             # full kernel integral
             model.eval_K()
