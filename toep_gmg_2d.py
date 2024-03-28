@@ -67,13 +67,13 @@ if __name__ == '__main__':
     # prepare log
     ################################################################
     device = torch.device(f'cuda:{args.device}')
-    resolution = 2**args.n+1
+    res = str(2**args.n+1)
 
     data_root = '/workdir/GreenMgNet/dataset'
     log_root = '/workdir/GreenMgNet/results/'
     task_nm = args.task
     exp_nm = '-'.join([
-        'Toep_GMGN2D', args.act, str(2**args.n+1), 
+        'Toep_GMGN2D', args.act, f'{res}x{res}', 
         str(args.h), str(args.k), str(args.m), str(args.seed), 
         args.train_post, args.test_post])
     hist_outpath, pred_outpath, nn_outpath, kernel_outpath, cfg_outpath = init_records(log_root, task_nm, exp_nm)
