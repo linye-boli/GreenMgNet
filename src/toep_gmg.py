@@ -318,8 +318,8 @@ class Toep_GMG2D:
                 K_local_odd = self.K_locals_odd[-1-l]
                 idx_local_odd = self.local_odd_idx[-1-l]
 
-                K_h[idx_local_even[:,0], idx_local_even[:,1]] = K_local_even
-                K_h[idx_local_odd[:,0], idx_local_odd[:,1]] = K_local_odd
+                K_h[idx_local_even[:,0], idx_local_even[:,1]] = K_local_even.squeeze()
+                K_h[idx_local_odd[:,0], idx_local_odd[:,1]] = K_local_odd.squeeze()
             
         self.K_h = K_h
     
