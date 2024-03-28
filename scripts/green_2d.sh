@@ -4,11 +4,11 @@ do
     do
         for act in relu
         do
-            for h in 64
+            for h in 50
             do
                 for n in 6
                 do
-                    python green_2d.py --device 0 --task $task --act $act --seed $s --ep_adam 1000 --h $h --n $n --bsz 4
+                    python green_2d.py --device 0 --task $task --act $act --seed $s --ep_adam 2500 --h $h --n $n --bsz 20 --sch
                 done
             done
         done

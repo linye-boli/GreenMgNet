@@ -102,14 +102,12 @@ def load_dataset_2d(
     
     F_train = load_mat2d(F_train_path, 'F', ntrain, True)[:,::2**r,::2**r]
     U_train = load_mat2d(U_train_path, 'U', ntrain, True)[:,::2**r,::2**r]
-    U_train = np.flip(np.flip(U_train, axis=1), axis=2).copy()
 
     F_train = rearrange(F_train, 'b x y -> b 1 x y')
     U_train = rearrange(U_train, 'b x y -> b 1 x y')
 
     F_test = load_mat2d(F_test_path, 'F', ntest, False)[:,::2**r,::2**r]
     U_test = load_mat2d(U_test_path, 'U', ntest, False)[:,::2**r,::2**r]
-    U_test = np.flip(np.flip(U_test, axis=1), axis=2).copy()
 
     F_test = rearrange(F_test, 'b x y -> b 1 x y')
     U_test = rearrange(U_test, 'b x y -> b 1 x y')
