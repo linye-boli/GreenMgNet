@@ -61,12 +61,11 @@ def DiskPoisson(pts):
     k = torch.nan_to_num(k, neginf=-1) * mask
     return k
 
-        
-if __name__ == '__main__':
-    from src.green_net import GreenNet1D, GreenNet2D
-
+def sample_dataset1d(n=12):
+    r = 15 - n
+    s = 2**r
     device = torch.device('cpu')
-    model = GreenNet1D(n=12, kernel=Logarithm, device=device, sub_num=5)
+    res = str(2**n + 1)
 
     # 1d dataset
     for data_path in ['./dataset/f1d_32769_3.00e-01.mat', './dataset/f1d_32769_3.00e-02.mat']:
@@ -79,14 +78,14 @@ if __name__ == '__main__':
             F = raw_data['F'][()]
             F = np.transpose(F, axes=range(len(F.shape) - 1, -1, -1))
 
-        F = torch.from_numpy(F[::8,:400]).float()
+        F = torch.from_numpy(F[::s,:400]).float()
 
         # cosine kernel
-        model = GreenNet1D(n=12, kernel=Cosine, device=device)
+        model = GreenNet1D(n=n, kernel=Cosine, device=device)
         model.eval_K()
         U = model.full_kint(F)
 
-        F_out_path = data_path.replace('32769', '4097')
+        F_out_path = data_path.replace('32769', res)
         U_out_path = F_out_path.replace('f1d', 'cosine')
 
         scipy.io.savemat(F_out_path, {'F':F.numpy()})
@@ -95,7 +94,7 @@ if __name__ == '__main__':
         print('save U at {:}'.format(U_out_path))
 
         # logarithm kernel
-        model = GreenNet1D(n=12, kernel=Logarithm, device=device)
+        model = GreenNet1D(n=n, kernel=Logarithm, device=device)
         model.eval_K()
         U = model.full_kint(F)
 
@@ -105,7 +104,7 @@ if __name__ == '__main__':
         print('save U at {:}'.format(U_out_path))
 
         # poisson kernel
-        model = GreenNet1D(n=12, kernel=Poisson, device=device)
+        model = GreenNet1D(n=n, kernel=Poisson, device=device)
         model.eval_K()
         U = model.full_kint(F)
 
@@ -115,7 +114,7 @@ if __name__ == '__main__':
         print('save U at {:}'.format(U_out_path))
         
         # exp_decay kernel
-        model = GreenNet1D(n=12, kernel=Expdecay, device=device)
+        model = GreenNet1D(n=n, kernel=Expdecay, device=device)
         model.eval_K()
         U = model.full_kint(F)
 
@@ -125,7 +124,7 @@ if __name__ == '__main__':
         print('save U at {:}'.format(U_out_path))
 
         # double holes kernel
-        model = GreenNet1D(n=12, kernel=DoubleHoles, device=device)
+        model = GreenNet1D(n=n, kernel=DoubleHoles, device=device)
         model.eval_K()
         U = model.full_kint(F)
 
@@ -133,7 +132,14 @@ if __name__ == '__main__':
 
         scipy.io.savemat(U_out_path, {'U':U.numpy()})
         print('save U at {:}'.format(U_out_path))
+ 
 
+def sample_dataset2d(n=6):
+    r = 9 - n
+    s = 2**r
+    device = torch.device('cpu')
+    res = str(2**n + 1)
+    
     # 2d dataset
     for data_path in ['./dataset/fdisk_513x513_2.00e-01.mat', './dataset/fdisk_513x513_5.00e-01.mat']:
 
@@ -145,14 +151,14 @@ if __name__ == '__main__':
             F = raw_data['F'][()]
             F = np.transpose(F, axes=range(len(F.shape) - 1, -1, -1))
         
-        F = torch.from_numpy(F[:400,::8,::8]).float()
+        F = torch.from_numpy(F[:400,::s,::s]).float()
 
         # 2d invdist kernel
         model = GreenNet2D(n=6, kernel=DiskInvdist, device=device)
         model.eval_K()
-        U = model.full_kint(F.reshape(400,-1)).reshape(400,65,65)
+        U = model.full_kint(F.reshape(400,-1)).reshape(400,res,res)
 
-        F_out_path = data_path.replace('513x513', '65x65')
+        F_out_path = data_path.replace('513x513', f'{res}x{res}')
         U_out_path = F_out_path.replace('fdisk', 'invdist')
 
         scipy.io.savemat(F_out_path, {'F':F.numpy()})
@@ -164,10 +170,20 @@ if __name__ == '__main__':
         # 2d poisson kernel
         model = GreenNet2D(n=6, kernel=DiskPoisson, device=device)
         model.eval_K()
-        U = model.full_kint(F.reshape(400,-1)).reshape(400,65,65)
+        U = model.full_kint(F.reshape(400,-1)).reshape(400,res,res)
         U_out_path = F_out_path.replace('fdisk', 'poisson')
 
         scipy.io.savemat(F_out_path, {'F':F.numpy()})
         print('save F at {:}'.format(F_out_path))
         scipy.io.savemat(U_out_path, {'U':U.numpy()})
         print('save U at {:}'.format(U_out_path))
+
+if __name__ == '__main__':
+    from src.green_net import GreenNet1D, GreenNet2D
+
+    for n in [9, 10, 11]:
+        sample_dataset1d(n)
+        
+
+
+    
