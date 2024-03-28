@@ -45,6 +45,7 @@ if __name__ == '__main__':
     parser.add_argument('--h', type=int, default=64,
                         help='hidden channel for mlp')
     args = parser.parse_args()
+    print(args)
 
     ################################################################
     #  configurations
@@ -70,7 +71,7 @@ if __name__ == '__main__':
     log_root = '/workdir/GreenMgNet/results/'
     task_nm = args.task
     exp_nm = '-'.join([
-        'GN2D', args.act, str(resolution),
+        'GN2D', args.act, str(2**args.n+1)+'x'+str(2**args.n+1),
         str(args.h), str(args.seed), 
         args.train_post, args.test_post])
     hist_outpath, pred_outpath, nn_outpath, kernel_outpath, cfg_outpath = init_records(log_root, task_nm, exp_nm)
@@ -94,8 +95,8 @@ if __name__ == '__main__':
     ################################################################
     # read data
     ################################################################
-    r = 9 - args.n
-    train_loader, test_loader = load_dataset_2d(args.task, data_root, r, bsz=batch_size, normalize=True)
+    r = 6 - args.n
+    train_loader, test_loader = load_dataset_2d(args.task, data_root, r, bsz=batch_size)
 
     ################################################################
     # build model
@@ -105,7 +106,10 @@ if __name__ == '__main__':
     model = GreenNet2D(n=args.n, kernel=kernel, device=device)
 
     opt_adam = torch.optim.Adam(kernel.parameters(), lr=lr_adam)
-    sch = torch.optim.lr_scheduler.ExponentialLR(opt_adam, gamma=0.95)
+    step_size = 100
+    gamma = 0.9
+    sch = torch.optim.lr_scheduler.StepLR(opt_adam, step_size=step_size, gamma=gamma)
+    
 
     ################################################################
     # training and evaluation

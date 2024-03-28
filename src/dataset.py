@@ -108,7 +108,7 @@ def load_dataset_2d(
 
     F_test = load_mat2d(F_test_path, 'F', ntest, False)[:,::2**r,::2**r]
     U_test = load_mat2d(U_test_path, 'U', ntest, False)[:,::2**r,::2**r]
-    
+
     F_test = rearrange(F_test, 'b x y -> b 1 x y')
     U_test = rearrange(U_test, 'b x y -> b 1 x y')
 

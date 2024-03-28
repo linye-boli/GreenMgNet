@@ -47,7 +47,7 @@ if __name__ == '__main__':
                         help='local range for correction on each level')
     parser.add_argument('--act', type=str, default='rational',
                         help='type of activation functions')
-    parser.add_argument('--h', type=int, default=4,
+    parser.add_argument('--h', type=int, default=64,
                         help='hidden channel for mlp')
     args = parser.parse_args()
 
@@ -55,6 +55,7 @@ if __name__ == '__main__':
     #  configurations
     ################################################################
     get_seed(args.seed, printout=False)
+    print(args)
 
     bsz = args.bsz
     lr_adam = args.lr_adam
@@ -74,7 +75,7 @@ if __name__ == '__main__':
     log_root = '/workdir/GreenMgNet/results/'
     task_nm = args.task
     exp_nm = '-'.join([
-        'DD_GMGN2D', args.act, str(2**args.n+1), 
+        'DD_GMGN2D', args.act, str(2**args.n+1)+'x'+str(2**args.n+1), 
         str(args.h), str(args.k), str(args.m), str(args.seed), 
         args.train_post, args.test_post])
     hist_outpath, pred_outpath, nn_outpath, kernel_outpath, cfg_outpath = init_records(log_root, task_nm, exp_nm)
@@ -98,7 +99,7 @@ if __name__ == '__main__':
     ################################################################
     # read data
     ################################################################
-    r = 9 - args.n
+    r = 6 - args.n
     train_loader, test_loader = load_dataset_2d(args.task, data_root, r, bsz=bsz)
 
     ################################################################
@@ -109,7 +110,9 @@ if __name__ == '__main__':
     model = DD_GMG2D(n=args.n, m=args.m, k=args.k, kernel=kernel, device=device)
 
     opt_adam = torch.optim.Adam(kernel.parameters(), lr=lr_adam)
-    sch = torch.optim.lr_scheduler.ExponentialLR(opt_adam, gamma=0.95)
+    step_size = 100
+    gamma = 0.9
+    sch = torch.optim.lr_scheduler.StepLR(opt_adam, step_size=step_size, gamma=gamma)
 
     ################################################################
     # training and evaluation

@@ -1,10 +1,10 @@
-for task in invdist poisson
+for task in invdist
 do
     for act in rational
     do
         for h in 64
         do
-            for n in 7
+            for n in 5
             do
                 for k in 5 3 1 0
                 do
