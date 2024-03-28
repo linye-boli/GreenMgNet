@@ -1,4 +1,4 @@
-for s in 1 3
+for s in 1
 do
     for act in relu rational 
     do
@@ -6,11 +6,11 @@ do
         do
             for h in 50
             do
-                for n in 11 #15 14 13 12
+                for n in 9 10 11 12 #15 14 13 12
                 do
-                    for k in 3 2 1
+                    for k in 7 5 3 1
                     do
-                        for m in 5 3 1 0 7 15 # 65 31 7 
+                        for m in 0 1 3 5 7 15 31 # 65 31 7 
                         do
                             python dd_gmg_1d.py --device 2 --task $task --act $act --seed $s --ep_adam 2500 --k $k --m $m --h $h --n $n --bsz 20 --sch
                         done 

@@ -6,7 +6,7 @@ do
         do
             for h in 50
             do
-                for n in 11
+                for n in 9 10 11 12
                 do
                     python green_1d.py --device 3 --task $task --act $act --seed $s --ep_adam 2500 --h $h --n $n --bsz 20 --sch
                 done

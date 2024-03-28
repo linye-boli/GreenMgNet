@@ -102,6 +102,7 @@ if __name__ == '__main__':
     ################################################################
     # build model
     ################################################################
+
     layers = [in_channels] + [hidden_channels]*4 + [out_channels]
     kernel = MLP(layers, nonlinearity=args.act).to(device)
     model = DD_GMG1D(n=args.n, m=args.m, k=args.k, kernel=kernel, device=device)
@@ -124,7 +125,7 @@ if __name__ == '__main__':
     for ep in pbar:
         pbar.set_description("train l2 {:.2e} - lr {:.4e}".format(train_rl2, sch.get_last_lr()[0]))
                 
-        model.kernel.train()
+        # model.kernel.train()
         train_rl2 = 0
         for f, u in train_loader:
             # fetch data batch 
