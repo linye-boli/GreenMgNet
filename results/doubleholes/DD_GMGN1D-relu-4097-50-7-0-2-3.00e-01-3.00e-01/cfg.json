@@ -1,0 +1,1 @@
+{"device": 0, "task": "doubleholes", "train_post": "3.00e-01", "test_post": "3.00e-01", "seed": 2, "lr_adam": 0.001, "ep_adam": 2500, "sch": true, "bsz": 20, "res": "4097", "n": 12, "k": 7, "m": 0, "act": "relu", "h": 50}

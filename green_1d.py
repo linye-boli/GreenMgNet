@@ -67,13 +67,13 @@ if __name__ == '__main__':
     ################################################################
     device = torch.device(f'cuda:{args.device}')
     print(device)
-    resolution = 2**args.n+1
+    res = str(2**args.n+1)
 
     data_root = '/workdir/GreenMgNet/dataset'
     log_root = '/workdir/GreenMgNet/results/'
     task_nm = args.task
     exp_nm = '-'.join([
-        'GN1D', args.act, str(2**args.n+1), 
+        'GN1D', args.act, res,
         str(args.h), str(args.seed), 
         args.train_post, args.test_post])
     hist_outpath, pred_outpath, nn_outpath, kernel_outpath, cfg_outpath = init_records(log_root, task_nm, exp_nm)
@@ -97,8 +97,7 @@ if __name__ == '__main__':
     ################################################################
     # read data
     ################################################################
-    r = 12 - args.n
-    train_loader, test_loader = load_dataset_1d(args.task, data_root, r, bsz=args.bsz)#, normalize=True)
+    train_loader, test_loader = load_dataset_1d(args.task, data_root, bsz=args.bsz, res=res)
 
     ################################################################
     # build model
