@@ -5,6 +5,7 @@ import argparse
 import torch.nn.functional as F 
 import json 
 from tqdm import trange 
+from einops import rearrange
 
 from src.model import MLP
 from src.toep_gmg import Toep_GMG2D
@@ -97,7 +98,7 @@ if __name__ == '__main__':
     # read data
     ################################################################
     r = 6 - args.n
-    train_loader, test_loader = load_dataset_2d(args.task, data_root, r)
+    train_loader, test_loader = load_dataset_2d(args.task, data_root, r, bsz=args.bsz)
 
     ################################################################
     # build model
@@ -107,7 +108,9 @@ if __name__ == '__main__':
     model = Toep_GMG2D(n=args.n, m=args.m, k=args.k, kernel=kernel, device=device)
 
     opt_adam = torch.optim.Adam(kernel.parameters(), lr=lr_adam)
-    sch = torch.optim.lr_scheduler.ExponentialLR(opt_adam, gamma=0.95)
+    step_size = 100
+    gamma = 0.9
+    sch = torch.optim.lr_scheduler.StepLR(opt_adam, step_size=step_size, gamma=gamma)
 
     ################################################################
     # training and evaluation
@@ -126,20 +129,20 @@ if __name__ == '__main__':
         for f, u in train_loader:
             # fetch data batch 
             u, f = u.to(device), f.to(device)
-            u = torch.squeeze(u)
-            f = torch.squeeze(f)
+            u = rearrange(torch.squeeze(u), 'b m n -> b (m n)')
+            f = rearrange(torch.squeeze(f), 'b m n -> b (m n)')
 
             # eval kernel
             model.eval_ml_K()
             model.assemble_K()
+
 
             # calc kernel integral
             u_ = model.fft_kint(f)
 
             # calc loss 
             b = u.shape[0]
-            loss = rl2_error(
-                u_.reshape(b,-1), u.reshape(b,-1))
+            loss = rl2_error(u_, u)
 
             opt_adam.zero_grad()
             loss.backward() # use the l2 relative loss
@@ -157,14 +160,12 @@ if __name__ == '__main__':
     with torch.no_grad():
         for f, u in test_loader:
             u, f = u.to(device), f.to(device)
-            u = torch.squeeze(u).T
-            f = torch.squeeze(f).T
+            u = rearrange(torch.squeeze(u), 'b m n -> b (m n)')
+            f = rearrange(torch.squeeze(f), 'b m n -> b (m n)')
 
             u_ = model.fft_kint(f)
             b = u.shape[0]
-            rl2 = rl2_error(
-                u_.reshape(b,-1), u.reshape(b,-1))
-
+            rl2 = rl2_error(u_, u)
             test_rl2 += rl2.item()
 
     test_rl2 = test_rl2/len(test_loader)
