@@ -90,24 +90,24 @@ def load_dataset_1d(
 
 
 def load_dataset_2d(
-        task_nm, data_root, r,
-        train_post='2.00e-01.mat', test_post='2.00e-01.mat',
+        task_nm, data_root,
+        train_post='2.00e-01.mat', test_post='2.00e-01.mat', res='65x65',
         ntrain=100, ntest=100, bsz=64, normalize=False, odd=True):
 
-    F_train_path = os.path.join(data_root, '_'.join(['fdisk', '65x65', train_post]))
-    U_train_path = os.path.join(data_root, '_'.join([task_nm, '65x65', train_post]))
+    F_train_path = os.path.join(data_root, '_'.join(['fdisk', res, train_post]))
+    U_train_path = os.path.join(data_root, '_'.join([task_nm, res, train_post]))
 
-    F_test_path = os.path.join(data_root, '_'.join(['fdisk', '65x65', test_post]))
-    U_test_path = os.path.join(data_root, '_'.join([task_nm, '65x65', test_post]))
+    F_test_path = os.path.join(data_root, '_'.join(['fdisk', res, test_post]))
+    U_test_path = os.path.join(data_root, '_'.join([task_nm, res, test_post]))
     
-    F_train = load_mat2d(F_train_path, 'F', ntrain, True)[:,::2**r,::2**r]
-    U_train = load_mat2d(U_train_path, 'U', ntrain, True)[:,::2**r,::2**r]
+    F_train = load_mat2d(F_train_path, 'F', ntrain, True)
+    U_train = load_mat2d(U_train_path, 'U', ntrain, True)
 
     F_train = rearrange(F_train, 'b x y -> b 1 x y')
     U_train = rearrange(U_train, 'b x y -> b 1 x y')
 
-    F_test = load_mat2d(F_test_path, 'F', ntest, False)[:,::2**r,::2**r]
-    U_test = load_mat2d(U_test_path, 'U', ntest, False)[:,::2**r,::2**r]
+    F_test = load_mat2d(F_test_path, 'F', ntest, False)
+    U_test = load_mat2d(U_test_path, 'U', ntest, False)
 
     F_test = rearrange(F_test, 'b x y -> b 1 x y')
     U_test = rearrange(U_test, 'b x y -> b 1 x y')

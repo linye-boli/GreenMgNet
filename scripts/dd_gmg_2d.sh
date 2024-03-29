@@ -1,4 +1,4 @@
-for s in 1 2 3 4 0
+for s in 0
 do
     for task in poisson
     do
@@ -10,9 +10,9 @@ do
                 do
                     for k in 3 2 1
                     do
-                        for m in 15 7 3 2 1 0
+                        for m in 15 7 5 3 1 0
                         do
-                            python dd_gmg_2d.py --device 0 --task $task --act $act --seed $s --ep_adam 2500 --k $k --m $m --h $h --n $n --bsz 20 --sch
+                            python dd_gmg_2d.py --device 0 --task $task --act $act --seed $s --ep_adam 2 --k $k --m $m --h $h --n $n --bsz 20 --sch
                         done 
                     done 
                 done 

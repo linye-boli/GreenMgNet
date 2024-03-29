@@ -44,6 +44,8 @@ if __name__ == '__main__':
                         help='type of activation functions')
     parser.add_argument('--h', type=int, default=64,
                         help='hidden channel for mlp')
+    parser.add_argument('--p', type=float, default=1.,
+                        help='percentage of points used for each training step')
     args = parser.parse_args()
     print(args)
 
@@ -65,15 +67,15 @@ if __name__ == '__main__':
     ################################################################
     device = torch.device(f'cuda:{args.device}')
     print(device)
-    resolution = 2**args.n+1
+    res = 2**args.n+1
+    res = str(2**args.n+1)+'x'+str(2**args.n+1)
 
     data_root = '/workdir/GreenMgNet/dataset'
     log_root = '/workdir/GreenMgNet/results/'
     task_nm = args.task
     exp_nm = '-'.join([
-        'GN2D', args.act, str(2**args.n+1)+'x'+str(2**args.n+1),
-        str(args.h), str(args.seed), 
-        args.train_post, args.test_post])
+        'GN2D', args.act, res, str(args.h), 
+        '{:.4f}'.format(args.p), str(args.seed)])
     hist_outpath, pred_outpath, nn_outpath, kernel_outpath, cfg_outpath = init_records(log_root, task_nm, exp_nm)
 
     if os.path.exists(hist_outpath):
@@ -95,22 +97,19 @@ if __name__ == '__main__':
     ################################################################
     # read data
     ################################################################
-    r = 6 - args.n
-    train_loader, test_loader = load_dataset_2d(args.task, data_root, r, bsz=batch_size)
+    train_loader, test_loader = load_dataset_2d(args.task, data_root, bsz=batch_size, res=res)
 
     ################################################################
     # build model
     ################################################################
     layers = [in_channels] + [hidden_channels]*4 + [out_channels]
     kernel = MLP(layers, nonlinearity=args.act).to(device)
-    model = GreenNet2D(n=args.n, kernel=kernel, device=device)
+    model = GreenNet2D(n=args.n, kernel=kernel, device=device, p=args.p)
+    model.rand_sub()
 
     opt_adam = torch.optim.Adam(kernel.parameters(), lr=lr_adam)
-    step_size = 100
-    gamma = 0.9
-    sch = torch.optim.lr_scheduler.StepLR(opt_adam, step_size=step_size, gamma=gamma)
+    sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt_adam, T_max=args.ep_adam)
     
-
     ################################################################
     # training and evaluation
     ################################################################
@@ -118,6 +117,7 @@ if __name__ == '__main__':
     train_rl2_hist = []
     test_rl2_hist = []
     train_rl2 = np.inf
+
     # training stage
     pbar = trange(epochs)
     for ep in pbar:
@@ -132,20 +132,19 @@ if __name__ == '__main__':
             u = rearrange(torch.squeeze(u), 'b m n -> b (m n)')
             f = rearrange(torch.squeeze(f), 'b m n -> b (m n)')
             
-            # # eval kernel
-            # model.rand_sub()
-            # model.eval_K_sub()
+            # eval kernel
+            model.eval_K_sub()
 
-            # # calc kernel integral
-            # u_ = model.sub_kint(f)
-            # # calc loss 
-            # loss = rl2_error(u_, u[:,model.sub])
-
-            # full kernel integral
-            model.eval_K()
-            u_ = model.full_kint(f)            
+            # calc kernel integral
+            u_ = model.sub_kint(f)
             # calc loss 
-            loss = rl2_error(u_, u)
+            loss = rl2_error(u_, u[:,model.sub])
+
+            # # full kernel integral
+            # model.eval_K()
+            # u_ = model.full_kint(f)            
+            # # calc loss 
+            # loss = rl2_error(u_, u)
 
             opt_adam.zero_grad()
             loss.backward() # use the l2 relative loss
@@ -165,8 +164,8 @@ if __name__ == '__main__':
             u, f = u.to(device), f.to(device)
             u = rearrange(torch.squeeze(u), 'b m n -> b (m n)')
             f = rearrange(torch.squeeze(f), 'b m n -> b (m n)')
-            # u_ = model.evalint_batch(f)
-            u_ = model.full_kint(f)   
+            u_ = model.evalint_batch(f)
+            # u_ = model.full_kint(f)   
             rl2 = rl2_error(u_, u)
             test_rl2 += rl2.item()
         

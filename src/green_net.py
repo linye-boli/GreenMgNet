@@ -1,3 +1,4 @@
+import numpy as np
 import torch 
 from .ops import grid1d_coords, grid2d_coords, grid4d_coords
 
@@ -35,19 +36,20 @@ class Grid1D:
         self.coords_hh = coords_hh.to(self.device)
 
 class GreenNet1D:
-    def __init__(self, n, kernel, device, sub_num=64):
+    def __init__(self, n, kernel, device, p=1.):
         '''
         n : total level
         '''
         self.n = n 
+        self.p = p
         self.kernel = kernel
         self.device = device
-        self.sub_num = sub_num
         self.build_grid()
         self.fetch_eval_pts()
-    
+        self.np = np.floor(self.grid.nh * p).astype(int) # number of training points in each training step
+
     def rand_sub(self):
-        self.sub = torch.randint(low=0, high=self.grid.nh, size=(self.sub_num,))
+        self.sub = torch.randint(low=0, high=self.grid.nh, size=(self.np,))
 
     def build_grid(self):
         nh = 2**self.n + 1
@@ -133,7 +135,7 @@ class Grid2D:
         self.coords_hh = coords_hh.to(self.device)
     
 class GreenNet2D:
-    def __init__(self, n, kernel, device, sub_num=64):
+    def __init__(self, n, kernel, device, p=1.):
         '''
         n : total level
         m : neighbor radius for a nodes on each axis
@@ -142,9 +144,9 @@ class GreenNet2D:
         self.n = n 
         self.device = device
         self.kernel = kernel
-        self.sub_num = sub_num
         self.build_grid()
         self.fetch_eval_pts()
+        self.np = np.floor((self.grid.nh**2) * p).astype(int) # number of training points in each training step
     
     def build_grid(self):
         nh = 2**self.n+1
@@ -174,7 +176,7 @@ class GreenNet2D:
         return uh
     
     def rand_sub(self):
-        self.sub = torch.randint(low=0, high=self.grid.nh**2, size=(self.sub_num,))
+        self.sub = torch.randint(low=0, high=self.grid.nh**2, size=(self.np,))
 
     def eval_K_sub(self):
         nh = self.grid.nh
@@ -189,7 +191,7 @@ class GreenNet2D:
         '''
         fh = fh.T
         hh = self.grid.hh
-        Khh = self.K_hh.reshape(self.sub_num,-1)
+        Khh = self.K_hh.reshape(self.np,-1)
         uh = hh * (Khh @ fh)
         uh = uh.T
         return uh

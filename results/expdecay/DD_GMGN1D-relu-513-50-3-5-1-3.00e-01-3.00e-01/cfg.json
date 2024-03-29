@@ -1,1 +1,0 @@
-{"device": 2, "task": "expdecay", "train_post": "3.00e-01", "test_post": "3.00e-01", "seed": 1, "lr_adam": 0.001, "ep_adam": 2500, "sch": true, "bsz": 20, "n": 9, "k": 3, "m": 5, "act": "relu", "h": 50}
