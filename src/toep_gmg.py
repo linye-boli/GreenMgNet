@@ -101,6 +101,7 @@ class Toep_GMG1D:
             print('ratio {:d}/{:d} = {:.2f}% \n'.format(
                 num_coarse + num_corrects, 2**(self.n+1)+1, (num_coarse + num_corrects)*100/(2**(self.n+1)+1)))
 
+        self.pts_ratio = (num_coarse + num_corrects)/(2**self.n+1)**2
         self.local_pts = local_pts
         self.local_idx = local_idx
 
@@ -278,6 +279,7 @@ class Toep_GMG2D:
                 (num_coarse + num_corrects)*100/((2**(self.n+1)+1)**2)
                 ))
 
+        self.pts_ratio = (num_coarse + num_corrects)/(2**self.n+1)**4
 
         self.local_even_pts = local_even_pts
         self.local_odd_pts = local_odd_pts

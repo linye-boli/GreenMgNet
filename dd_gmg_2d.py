@@ -122,8 +122,7 @@ if __name__ == '__main__':
     ################################################################
     train_rl2_hist = []
     test_rl2_hist = []
-    train_rl2 = 1
-    test_rl2_best = 1000
+    train_rl2 = np.inf
 
     pbar = trange(epochs)
     for ep in pbar:
