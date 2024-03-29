@@ -158,7 +158,7 @@ class DD_GMG1D:
             print('ratio {:d}/{:d} = {:.2f}% \n'.format(
                 num_coarse + num_corrects, (2**self.n+1)**2, (num_coarse + num_corrects)*100/(2**self.n+1)**2))
         
-        self.pts_ratio = (num_coarse + num_corrects)*100/(2**self.n+1)**2
+        self.pts_ratio = (num_coarse + num_corrects)/(2**self.n+1)**2
 
         self.pts_local = pts_local
 
@@ -449,7 +449,7 @@ class DD_GMG2D:
             print('ratio {:d}/{:d} = {:.2f}% \n'.format(
                 num_coarse + num_corrects, (2**self.n+1)**4, (num_coarse + num_corrects)*100/(2**self.n+1)**4))
         
-        self.pts_ratio = (num_coarse + num_corrects)*100/(2**self.n+1)**2
+        self.pts_ratio = (num_coarse + num_corrects)/(2**self.n+1)**4
 
         self.pts_local = pts_local
     

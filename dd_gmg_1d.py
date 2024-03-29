@@ -55,6 +55,7 @@ if __name__ == '__main__':
     #  configurations
     ################################################################
     get_seed(args.seed, printout=False)
+    device = torch.device(f'cuda:{args.device}')
 
     lr_adam = args.lr_adam
     epochs = args.ep_adam
@@ -64,9 +65,18 @@ if __name__ == '__main__':
     hidden_channels = args.h
 
     ################################################################
+    # build model
+    ################################################################
+
+    layers = [in_channels] + [hidden_channels]*4 + [out_channels]
+    kernel = MLP(layers, nonlinearity=args.act).to(device)
+    model = DD_GMG1D(n=args.n, m=args.m, k=args.k, kernel=kernel, device=device)
+    p = model.pts_ratio
+
+
+    ################################################################
     # prepare log
     ################################################################
-    device = torch.device(f'cuda:{args.device}')
     res = str(2**args.n+1)
 
     data_root = '/workdir/GreenMgNet/dataset'
@@ -74,8 +84,9 @@ if __name__ == '__main__':
     task_nm = args.task
     exp_nm = '-'.join([
         'DD_GMGN1D', args.act, res, 
-        str(args.h), str(args.k), str(args.m), str(args.seed), 
-        args.train_post, args.test_post])
+        str(args.h), str(args.k), str(args.m), 
+        '{:.4f}'.format(p),
+        str(args.seed)])
     hist_outpath, pred_outpath, nn_outpath, kernel_outpath, cfg_outpath = init_records(log_root, task_nm, exp_nm)
 
     if os.path.exists(hist_outpath):
@@ -102,20 +113,12 @@ if __name__ == '__main__':
     ################################################################
     # build model
     ################################################################
-
-    layers = [in_channels] + [hidden_channels]*4 + [out_channels]
-    kernel = MLP(layers, nonlinearity=args.act).to(device)
-    model = DD_GMG1D(n=args.n, m=args.m, k=args.k, kernel=kernel, device=device)
-
     opt_adam = torch.optim.Adam(kernel.parameters(), lr=lr_adam)
-    step_size = 100
-    gamma = 0.9
-    sch = torch.optim.lr_scheduler.StepLR(opt_adam, step_size=step_size, gamma=gamma)
+    sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt_adam, T_max=args.ep_adam)
 
     ################################################################
     # training and evaluation
     ################################################################
-    
     train_rl2_hist = []
     test_rl2_hist = []
     train_rl2 = 1
@@ -153,7 +156,6 @@ if __name__ == '__main__':
 
         train_rl2 = train_rl2/len(train_loader)
         train_rl2_hist.append(train_rl2)
-
 
     model.kernel.eval()
     test_rl2 = 0.0
