@@ -6,7 +6,7 @@ do
         do
             for h in 50
             do
-                for n in 9 10 11 12 #15 14 13 12
+                for n in 9 #15 14 13 12
                 do
                     for k in 7 5 3 1
                     do
