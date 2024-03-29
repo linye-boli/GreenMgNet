@@ -1,0 +1,1 @@
+{"device": 1, "task": "invdist", "train_post": "3.00e-01", "test_post": "3.00e-01", "seed": 2, "lr_adam": 0.001, "ep_adam": 2500, "sch": true, "bsz": 20, "n": 6, "k": 0, "m": 7, "act": "relu", "h": 50}
