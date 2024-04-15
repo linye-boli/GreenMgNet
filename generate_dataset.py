@@ -154,7 +154,7 @@ def sample_dataset2d(n=6):
         F = torch.from_numpy(F[:400,::s,::s]).float()
 
         # 2d invdist kernel
-        model = GreenNet2D(n=6, kernel=DiskInvdist, device=device)
+        model = GreenNet2D(n=n, kernel=DiskInvdist, device=device)
         model.eval_K()
         U = model.full_kint(F.reshape(400,-1)).reshape(400,res,res)
 
@@ -168,7 +168,7 @@ def sample_dataset2d(n=6):
 
 
         # 2d poisson kernel
-        model = GreenNet2D(n=6, kernel=DiskPoisson, device=device)
+        model = GreenNet2D(n=n, kernel=DiskPoisson, device=device)
         model.eval_K()
         U = model.full_kint(F.reshape(400,-1)).reshape(400,res,res)
         U_out_path = F_out_path.replace('fdisk', 'poisson')
@@ -181,8 +181,11 @@ def sample_dataset2d(n=6):
 if __name__ == '__main__':
     from src.green_net import GreenNet1D, GreenNet2D
 
-    for n in [9, 10, 11]:
-        sample_dataset1d(n)
+    # for n in [9, 10, 11]:
+    #     sample_dataset1d(n)
+
+    for n in [8, 9]:
+        sample_dataset2d(n)
         
 
 
