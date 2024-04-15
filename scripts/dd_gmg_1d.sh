@@ -1,6 +1,6 @@
 for s in 0
 do
-    for act in relu #rational 
+    for act in rational relu
     do
         for task in poisson expdecay
         do
@@ -12,7 +12,7 @@ do
                     do
                         for m in 0 1 3 5 7 15 31
                         do
-                            python dd_gmg_1d.py --device 1 --task $task --act $act --seed $s --ep_adam 2500 --k $k --m $m --h $h --n $n --bsz 20 --sch
+                            python dd_gmg_1d.py --device 2 --task $task --act $act --seed $s --ep_adam 2500 --k $k --m $m --h $h --n $n --bsz 20 --sch
                         done 
                     done 
                 done 

@@ -1,6 +1,6 @@
 for s in 0
 do
-    for act in relu
+    for act in rational relu
     do
         for task in poisson cosine logarithm expdecay doubleholes
         do

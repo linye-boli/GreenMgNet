@@ -181,7 +181,7 @@ def sample_dataset2d(n=6):
 if __name__ == '__main__':
     from src.green_net import GreenNet1D, GreenNet2D
 
-    for n in [9, 10, 11]:
+    for n in [9, 10, 11, 13]:
         sample_dataset1d(n)
         
 
