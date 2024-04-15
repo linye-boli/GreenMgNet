@@ -2,7 +2,7 @@ for s in 0
 do
     for task in poisson invdist
     do
-        for act in relu
+        for act in rational
         do
             for h in 50
             do
