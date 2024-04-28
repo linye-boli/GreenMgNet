@@ -259,8 +259,6 @@ def cat2d_nbr_coords(coords_i, coords_j):
     coords_i = repeat(coords_i, 'n d -> n m1 m2 d', m1=m1, m2=m2)
     return torch.cat([coords_i, coords_j], axis=-1)
 
-
-
 if __name__ == '__main__':
     from GreenMgNet.src.utils import l1_norm
     # test interp1d

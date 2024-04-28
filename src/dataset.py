@@ -37,7 +37,7 @@ def load_mat2d(data_path, key, N, train=True):
     
 def load_dataset_1d(
         task_nm, data_root,
-        train_post='3.00e-01.mat', test_post='3.00e-01.mat', res='4097',
+        train_post='3.00e-02.mat', test_post='3.00e-02.mat', res='4097',
         ntrain=100, ntest=100, bsz=64, normalize=False, odd=True):
     
     # F, U = next(iter(train_loader))
