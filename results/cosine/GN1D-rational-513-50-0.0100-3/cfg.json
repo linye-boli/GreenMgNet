@@ -1,0 +1,1 @@
+{"device": 0, "task": "cosine", "train_post": "3.00e-01", "test_post": "3.00e-01", "seed": 3, "lr_adam": 0.001, "ep_adam": 1000, "sch": true, "bsz": 100, "n": 9, "act": "rational", "h": 50, "p": 0.01}
