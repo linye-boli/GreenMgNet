@@ -1,8 +1,8 @@
 for s in 0
 do
-    for act in relu #rational 
+    for act in relu rational 
     do
-        for task in poisson expdecay
+        for task in poisson
         do
             for h in 50
             do

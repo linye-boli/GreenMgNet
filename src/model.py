@@ -43,11 +43,12 @@ Activations = {
 
 # A simple feedforward neural network
 class MLP(torch.nn.Module):
-    def __init__(self, layers, nonlinearity):
+    def __init__(self, layers, nonlinearity, aug=None):
         super(MLP, self).__init__()
 
         nonlinearity = Activations[nonlinearity]
         self.n_layers = len(layers) - 1
+        self.aug = aug
 
         assert self.n_layers >= 1
 
@@ -59,8 +60,22 @@ class MLP(torch.nn.Module):
                 self.layers.append(nonlinearity())
 
     def forward(self, x):
-        
+
+        if self.aug == 'aug1_1d':
+            z = (x[...,[0]] < x[...,[1]] - 0.5)*2
+            x = torch.concat([x,z], axis=-1)
+
+        if self.aug == 'aug2_1d':
+            m1 = x[...,[0]] < x[...,[1]]
+            m2 = x[...,[0]] >= x[...,[1]]
+
         for _, l in enumerate(self.layers):
             x = l(x)
 
+        if self.aug == 'aug2_1d':
+            x[...,[0]] = x[...,[0]] * m1
+            x[...,[1]] = x[...,[1]] * m2
+            x = x.sum(axis=-1)
+
         return x
+    

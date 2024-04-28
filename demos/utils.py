@@ -14,7 +14,7 @@ def create_expdf(data_root):
         elif len(settings) == 8:
             model_nm, act, res, h, k, m, p, seed = settings
 
-        rl2 = pd.read_csv(exp_hist).test_rl2[0]
+        rl2 = pd.read_csv(exp_hist).test_rl2[-1]
         exp_lst.append([task_nm, model_nm, act, res, int(h), int(k), int(m), float(p), seed, float(rl2)])
     exp_df = pd.DataFrame(
         exp_lst, columns=['task_nm', 'model_nm', 'act', 'res', 'h', 'k', 'm', 'p', 'seed', 'rl2'])

@@ -1,0 +1,1 @@
+{"device": 0, "aug": "aug2", "task": "poisson", "train_post": "3.00e-01", "test_post": "3.00e-01", "seed": 0, "lr_adam": 0.01, "ep_adam": 10000, "sch": true, "bsz": 200, "n": 9, "act": "relu", "h": 50, "p": 1.0}
