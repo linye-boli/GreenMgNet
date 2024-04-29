@@ -20,15 +20,17 @@ if __name__ == '__main__':
         description="Train DD Green MG Net")
     parser.add_argument('--device', type=int, default=0,
                         help='device id.')
+    parser.add_argument('--aug', type=str, default='none',
+                        help='aug model type.')
     parser.add_argument('--task', type=str, default='cosine',
                         help='dataset name. (laplace, cosine, logarithm)')
-    parser.add_argument('--train_post', type=str, default='3.00e-01',
+    parser.add_argument('--train_post', type=str, default='3.00e-02',
                         help='lambda of inputs funcitons, higher smoother')
-    parser.add_argument('--test_post', type=str, default='3.00e-01',
+    parser.add_argument('--test_post', type=str, default='3.00e-02',
                         help='lambda of inputs funcitons, higher smoother')
     parser.add_argument('--seed', type=int, default=0,
                         help='random seed for reproducibility')
-    parser.add_argument('--lr_adam', type=float, default=1e-3,
+    parser.add_argument('--lr_adam', type=float, default=1e-2,
                         help='learning rate')
     parser.add_argument('--ep_adam', type=int, default=1000,
                         help='learning rate')
@@ -67,9 +69,13 @@ if __name__ == '__main__':
     ################################################################
     # build model
     ################################################################
+    if args.aug == 'aug1':
+        in_channels += 1
+    elif args.aug == 'aug2':
+        out_channels += 1
 
     layers = [in_channels] + [hidden_channels]*4 + [out_channels]
-    kernel = MLP(layers, nonlinearity=args.act).to(device)
+    kernel = MLP(layers, nonlinearity=args.act, aug=args.aug+'_1d').to(device)
     model = DD_GMG1D(n=args.n, m=args.m, k=args.k, kernel=kernel, device=device)
     p = model.pts_ratio
 
@@ -84,7 +90,7 @@ if __name__ == '__main__':
     exp_nm = '-'.join([
         'DD_GMGN1D', args.act, res, 
         str(args.h), str(args.k), str(args.m), 
-        '{:.4f}'.format(p),
+        '{:.4f}'.format(p), args.aug, 
         str(args.seed)])
     hist_outpath, pred_outpath, nn_outpath, kernel_outpath, cfg_outpath = init_records(log_root, task_nm, exp_nm)
 
@@ -107,13 +113,16 @@ if __name__ == '__main__':
     ################################################################
     # read data
     ################################################################
-    train_loader, test_loader = load_dataset_1d(args.task, data_root, bsz=args.bsz, res=res)#, normalize=True)
+    train_loader, test_loader = load_dataset_1d(
+        args.task, data_root, bsz=args.bsz, res=res, 
+        train_post=args.train_post, test_post=args.test_post)
 
     ################################################################
     # build model
     ################################################################
     opt_adam = torch.optim.Adam(kernel.parameters(), lr=lr_adam)
-    sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt_adam, T_max=args.ep_adam)
+    # sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt_adam, T_max=args.ep_adam)
+    sch = torch.optim.lr_scheduler.MultiStepLR(optimizer=opt_adam, milestones=[1000, 3000], gamma=0.1)
 
     ################################################################
     # training and evaluation
@@ -121,13 +130,18 @@ if __name__ == '__main__':
     train_rl2_hist = []
     test_rl2_hist = []
     train_rl2 = np.inf
+    test_rl2 = np.inf
 
     pbar = trange(epochs)
     for ep in pbar:
-        pbar.set_description("train l2 {:.2e} - lr {:.4e}".format(train_rl2, sch.get_last_lr()[0]))
+        pbar.set_description("train {:.2e} test {:.2e} - lr {:.4e}".format(
+            train_rl2, test_rl2, sch.get_last_lr()[0]))
                 
-        # model.kernel.train()
-        train_rl2 = 0
+        model.kernel.train()
+        
+        train_rl2 = 0.0
+        test_rl2 = 0.0
+
         for f, u in train_loader:
             # fetch data batch 
             u, f = u.to(device), f.to(device)
@@ -155,20 +169,22 @@ if __name__ == '__main__':
         train_rl2 = train_rl2/len(train_loader)
         train_rl2_hist.append(train_rl2)
 
-    model.kernel.eval()
-    test_rl2 = 0.0
-    with torch.no_grad():
-        for f, u in test_loader:
-            u, f = u.to(device), f.to(device)
-            u = torch.squeeze(u).T
-            f = torch.squeeze(f).T
+        # test stage
+        model.kernel.eval()
+        with torch.no_grad():
+            for f, u in test_loader:
+                u, f = u.to(device), f.to(device)
+                u = torch.squeeze(u).T
+                f = torch.squeeze(f).T
 
-            model.restrict_ml_f(f)
-            u_ = model.ml_kint()
-            rl2 = rl2_error(u_.T, u.T)
-            test_rl2 += rl2.item()
+                model.restrict_ml_f(f)
+                u_ = model.ml_kint()
+                rl2 = rl2_error(u_.T, u.T)
+                test_rl2 += rl2.item()
 
-    test_rl2 = test_rl2/len(test_loader)
+        test_rl2 = test_rl2/len(test_loader)
+        test_rl2_hist.append(test_rl2)
+        
     print('test_rl2 : {:.4e}'.format(test_rl2))
     print(f'save model at : {nn_outpath}')    
     torch.save(model.kernel.state_dict(), nn_outpath)

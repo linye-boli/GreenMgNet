@@ -103,7 +103,9 @@ if __name__ == '__main__':
     ################################################################
     # read data
     ################################################################
-    train_loader, test_loader = load_dataset_1d(args.task, data_root, bsz=args.bsz, res=res, train_post=args.train_post, test_post=args.test_post)
+    train_loader, test_loader = load_dataset_1d(
+        args.task, data_root, bsz=args.bsz, res=res, 
+        train_post=args.train_post, test_post=args.test_post)
 
     ################################################################
     # build model
