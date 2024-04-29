@@ -1,8 +1,8 @@
 for s in 0
 do
-    for act in relu rational 
+    for act in rational 
     do
-        for task in expdecay poisson doubleholes
+        for task in logarithm poisson
         do
             for h in 50
             do
@@ -12,7 +12,10 @@ do
                     do
                         for m in 0 1 3 5 7 15 31 # 65 31 7 
                         do
-                            python dd_gmg_1d.py --device 1 --task $task --act $act --seed $s --ep_adam 2500 --k $k --m $m --h $h --n $n --bsz 20 --sch
+                            for aug in aug2 none 
+                            do
+                            python dd_gmg_1d.py --device 0 --task $task --act $act --seed $s --ep_adam 10000 --k $k --m $m --h $h --n $n --bsz 200 --sch --aug $aug
+                            done 
                         done 
                     done 
                 done 
