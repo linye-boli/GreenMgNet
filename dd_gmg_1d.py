@@ -188,7 +188,7 @@ if __name__ == '__main__':
     print('test_rl2 : {:.4e}'.format(test_rl2))
     print(f'save model at : {nn_outpath}')    
     torch.save(model.kernel.state_dict(), nn_outpath)
-    save_hist(hist_outpath, train_rl2_hist, test_rl2)
+    save_hist(hist_outpath, train_rl2_hist, test_rl2_hist)
     # K = model.K_hh.cpu().detach().numpy()
     # print(f'save kernel at : {kernel_outpath} ', K.shape)
     # np.save(kernel_outpath, K)

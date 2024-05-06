@@ -204,7 +204,7 @@ class GreenNet2D:
         fh = fh.T        
         hh = self.grid.hh
         nh = self.grid.nh
-        pts_batch = torch.split(self.pts.reshape(nh*nh, nh, nh, 4), 64)
+        pts_batch = torch.split(self.pts.reshape(nh*nh, nh, nh, 4), 128)
         uh = []
         for pts in pts_batch:
             bsz = pts.shape[0]
@@ -213,3 +213,15 @@ class GreenNet2D:
             uh.append(u_sub)     
         uh = torch.cat(uh).T
         return uh
+
+    def eval_K_batch(self):
+        hh = self.grid.hh
+        nh = self.grid.nh
+        pts_batch = torch.split(self.pts.reshape(nh*nh, nh, nh, 4), 128)
+        Khh = []
+        for pts in pts_batch:
+            bsz = pts.shape[0]
+            K_sub = self.kernel(pts).detach().reshape(bsz, -1)
+            Khh.append(K_sub)     
+        Khh = torch.cat(Khh).T
+        return Khh

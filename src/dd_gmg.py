@@ -668,7 +668,19 @@ class DD_GMG2D:
         u_h = u_h_
         return rearrange(u_h, 'b m n -> b (m n)')
 
-    
+    def eval_K_batch(self):
+        self.ml_grids[0].init_grid_hh()
+        pts = self.ml_grids[0].x_hh.reshape(-1,4)
+        nh = self.ml_grids[0].nh
+
+        pts_batch = torch.split(pts.reshape(nh*nh, nh, nh, 4), 128)
+        Khh = []
+        for pts in pts_batch:
+            bsz = pts.shape[0]
+            K_sub = self.kernel(pts).detach().reshape(bsz, -1)
+            Khh.append(K_sub)     
+        Khh = torch.cat(Khh).T
+        return Khh
 
 if __name__ == '__main__':
     from einops import repeat

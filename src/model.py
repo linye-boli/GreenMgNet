@@ -68,6 +68,17 @@ class MLP(torch.nn.Module):
         if self.aug == 'aug2_1d':
             m1 = x[...,[0]] < x[...,[1]]
             m2 = x[...,[0]] >= x[...,[1]]
+        
+        if self.aug == 'aug2_2d':
+            x1 = x[...,[0]]
+            x2 = x[...,[1]]
+            y1 = x[...,[2]]
+            y2 = x[...,[3]]
+
+            m1 = (x1 - y1 + x2 - y2) < 0
+            m2 = (x1 - y1 + x2 - y2) > 0
+            m3 = ((x1 == y1) & (x2 == y2) & ((x1 - y1 + x2 - y2) == 0))
+            m4 = (((x1 != y1) | (x2 != y2)) & ((x1 - y1 + x2 - y2) == 0))
 
         for _, l in enumerate(self.layers):
             x = l(x)
@@ -76,6 +87,15 @@ class MLP(torch.nn.Module):
             x[...,[0]] = x[...,[0]] * m1
             x[...,[1]] = x[...,[1]] * m2
             x = x.sum(axis=-1)
+        
+        if self.aug == 'aug2_2d':
+            # import pdb 
+            # pdb.set_trace()
+            # x[...,[0]] = x[...,[0]] * m1
+            # x[...,[1]] = x[...,[1]] * m2
+            # x[...,[2]] = x[...,[0]] * m3 + x[...,[1]] * m3
+            
+            x = x[...,[0]] * m1 + x[...,[1]] * m2 + x[...,[0]] * m3 + (x[...,[0]] * m4 + x[...,[1]] * m4)/2
 
         return x
     

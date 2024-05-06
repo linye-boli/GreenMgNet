@@ -30,10 +30,12 @@ def load_mat2d(data_path, key, N, train=True):
         X = raw_data[key][()]
         X = np.transpose(X, axes=range(len(X.shape) - 1, -1, -1))
 
+    X = X.T
+
     if train:
-        return X[:N,:,:]
+        return X[:N,:]
     else:
-        return X[-N:,:,:]
+        return X[-N:,:]
     
 def load_dataset_1d(
         task_nm, data_root,
@@ -92,25 +94,31 @@ def load_dataset_1d(
 def load_dataset_2d(
         task_nm, data_root,
         train_post='2.00e-01.mat', test_post='2.00e-01.mat', res='65x65',
-        ntrain=100, ntest=100, bsz=64, normalize=False, odd=True):
+        ntrain=200, ntest=200, bsz=64, normalize=False, odd=True):
 
-    F_train_path = os.path.join(data_root, '_'.join(['fdisk', res, train_post]))
+    if 'rect' in task_nm:
+        prefix = 'frect'
+    elif 'disk' in task_nm:
+        prefix = 'fdisk'
+
+    F_train_path = os.path.join(data_root, '_'.join([prefix, res, train_post]))
     U_train_path = os.path.join(data_root, '_'.join([task_nm, res, train_post]))
 
-    F_test_path = os.path.join(data_root, '_'.join(['fdisk', res, test_post]))
+    F_test_path = os.path.join(data_root, '_'.join([prefix, res, test_post]))
     U_test_path = os.path.join(data_root, '_'.join([task_nm, res, test_post]))
     
     F_train = load_mat2d(F_train_path, 'F', ntrain, True)
     U_train = load_mat2d(U_train_path, 'U', ntrain, True)
 
-    F_train = rearrange(F_train, 'b x y -> b 1 x y')
-    U_train = rearrange(U_train, 'b x y -> b 1 x y')
+    res = int(res.split('x')[0])
+    F_train = rearrange(F_train, 'b (x y) -> b 1 x y', x=res, y=res)
+    U_train = rearrange(U_train, 'b (x y) -> b 1 x y', x=res, y=res)
 
     F_test = load_mat2d(F_test_path, 'F', ntest, False)
     U_test = load_mat2d(U_test_path, 'U', ntest, False)
 
-    F_test = rearrange(F_test, 'b x y -> b 1 x y')
-    U_test = rearrange(U_test, 'b x y -> b 1 x y')
+    F_test = rearrange(F_test, 'b (x y) -> b 1 x y', x=res, y=res)
+    U_test = rearrange(U_test, 'b (x y) -> b 1 x y', x=res, y=res)
 
     if normalize:
         U_mean, U_std = U_train.mean(), U_train.std()

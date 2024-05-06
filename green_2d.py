@@ -20,6 +20,8 @@ if __name__ == '__main__':
         description="Train Green Net")
     parser.add_argument('--device', type=int, default=0,
                         help='device id.')
+    parser.add_argument('--aug', type=str, default='none',
+                        help='aug model type.')
     parser.add_argument('--task', type=str, default='invdist',
                         help='dataset name. (invdist, poisson)')
     parser.add_argument('--train_post', type=str, default='2.00e-01',
@@ -28,7 +30,7 @@ if __name__ == '__main__':
                         help='lambda of inputs funcitons, higher smoother')    
     parser.add_argument('--seed', type=int, default=0,
                         help='random seed for reproducibility')
-    parser.add_argument('--lr_adam', type=float, default=1e-3,
+    parser.add_argument('--lr_adam', type=float, default=1e-2,
                         help='learning rate')
     parser.add_argument('--ep_adam', type=int, default=1000,
                         help='learning rate')
@@ -75,7 +77,7 @@ if __name__ == '__main__':
     task_nm = args.task
     exp_nm = '-'.join([
         'GN2D', args.act, res, str(args.h), 
-        '{:.4f}'.format(args.p), str(args.seed)])
+        '{:.4f}'.format(args.p), args.aug, str(args.seed)])
     hist_outpath, pred_outpath, nn_outpath, kernel_outpath, cfg_outpath = init_records(log_root, task_nm, exp_nm)
 
     if os.path.exists(hist_outpath):
@@ -102,13 +104,20 @@ if __name__ == '__main__':
     ################################################################
     # build model
     ################################################################
+    if args.aug == 'aug1':
+        in_channels += 1 
+    elif args.aug == 'aug2':
+        out_channels += 1
+
     layers = [in_channels] + [hidden_channels]*4 + [out_channels]
-    kernel = MLP(layers, nonlinearity=args.act).to(device)
+    kernel = MLP(layers, nonlinearity=args.act, aug=args.aug+'_2d').to(device)
     model = GreenNet2D(n=args.n, kernel=kernel, device=device, p=args.p)
     model.rand_sub()
 
     opt_adam = torch.optim.Adam(kernel.parameters(), lr=lr_adam)
-    sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt_adam, T_max=args.ep_adam)
+    # sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt_adam, T_max=args.ep_adam)
+    sch = torch.optim.lr_scheduler.MultiStepLR(optimizer=opt_adam, milestones=[100, 300], gamma=0.1)
+
     
     ################################################################
     # training and evaluation
@@ -117,11 +126,12 @@ if __name__ == '__main__':
     train_rl2_hist = []
     test_rl2_hist = []
     train_rl2 = np.inf
+    test_rl2 = np.inf
 
     # training stage
     pbar = trange(epochs)
     for ep in pbar:
-        pbar.set_description("train l2 {:.2e} - lr {:.4e}".format(train_rl2, sch.get_last_lr()[0]))
+        pbar.set_description("train {:.2e} test {:.2e} - lr {:.4e}".format(train_rl2, test_rl2, sch.get_last_lr()[0]))
         
         model.kernel.train()
         train_rl2 = 0
@@ -140,7 +150,7 @@ if __name__ == '__main__':
             # calc loss 
             loss = rl2_error(u_, u[:,model.sub])
 
-            # # full kernel integral
+            # # # full kernel integral
             # model.eval_K()
             # u_ = model.full_kint(f)            
             # # calc loss 
@@ -156,26 +166,28 @@ if __name__ == '__main__':
 
         train_rl2 = train_rl2/len(train_loader)
         train_rl2_hist.append(train_rl2)
-
-    model.kernel.eval()
-    test_rl2 = 0.0
-    with torch.no_grad():
-        for f, u in test_loader:
-            u, f = u.to(device), f.to(device)
-            u = rearrange(torch.squeeze(u), 'b m n -> b (m n)')
-            f = rearrange(torch.squeeze(f), 'b m n -> b (m n)')
-            u_ = model.evalint_batch(f)
-            # u_ = model.full_kint(f)   
-            rl2 = rl2_error(u_, u)
-            test_rl2 += rl2.item()
         
-    test_rl2 = test_rl2/len(test_loader)
+        model.kernel.eval()
+        test_rl2 = 0.0
+        with torch.no_grad():
+            for f, u in test_loader:
+                u, f = u.to(device), f.to(device)
+                u = rearrange(torch.squeeze(u), 'b m n -> b (m n)')
+                f = rearrange(torch.squeeze(f), 'b m n -> b (m n)')
+                u_ = model.evalint_batch(f)
+                # u_ = model.full_kint(f)   
+                rl2 = rl2_error(u_, u)
+                test_rl2 += rl2.item()
+        
+        test_rl2 = test_rl2/len(test_loader)
+        test_rl2_hist.append(test_rl2)
+        
     print('test_rl2 : {:.4e}'.format(test_rl2))
     print(f'save model at : {nn_outpath}')    
     torch.save(model.kernel.state_dict(), nn_outpath)
 
-    save_hist(hist_outpath, train_rl2_hist, test_rl2)
-    K = model.K_hh.cpu().detach().numpy()
+    save_hist(hist_outpath, train_rl2_hist, test_rl2_hist)
+    K = model.eval_K_batch().cpu().detach().numpy()
     print(f'save kernel at : {kernel_outpath} ', K.shape)
     np.save(kernel_outpath, K)
     print('-'*20)
