@@ -2,7 +2,7 @@ for s in 0 1 2 3 4
 do
     for act in rational 
     do
-        for task in poisson
+        for task in schrodinger1d poisson1d
         do
             for h in 50
             do
