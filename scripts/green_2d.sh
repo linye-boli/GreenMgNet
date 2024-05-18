@@ -1,6 +1,6 @@
-for s in 0 1 2 3 4
+for task in darcyrect poissonrect
 do
-    for task in poissonrect
+    for s in 0 1 2 3 4
     do
         for act in rational
         do
@@ -8,7 +8,7 @@ do
             do
                 for n in 6
                 do
-                    for p in 0.001 0.005 0.03 0.05 0.1 0.15 0.2
+                    for p in 0.2 0.001 0.005 0.03 0.05 0.1 0.15
                     do
                         for aug in aug2
                         do

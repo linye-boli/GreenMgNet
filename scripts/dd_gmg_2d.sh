@@ -1,6 +1,6 @@
-for s in 0 1 2 3 4
+for s in 0 1 #2 3 4
 do
-    for task in poissonrect
+    for task in darcyrect poissonrect
     do
         for act in rational 
         do
