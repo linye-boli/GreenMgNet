@@ -166,7 +166,6 @@ def sample_dataset2d(n=6):
         scipy.io.savemat(U_out_path, {'U':U.numpy()})
         print('save U at {:}'.format(U_out_path))
 
-
         # 2d poisson kernel
         model = GreenNet2D(n=n, kernel=DiskPoisson, device=device)
         model.eval_K()
