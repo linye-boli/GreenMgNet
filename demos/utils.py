@@ -9,7 +9,7 @@ def create_expdf(data_root):
         _, _, task_nm, exp_nm, _ = exp_hist.split('/')
         settings = exp_nm.split('-')
         if len(settings) == 7:
-            model_nm, act, res, h, p, aug, seed = settings
+            model_nm, act, res, h, p, seed, aug = settings
             k, m = 0, 0
         elif len(settings) == 9:
             model_nm, act, res, h, k, m, p, aug, seed = settings
