@@ -1,8 +1,8 @@
-for s in 0 1 2 3 4
+for s in 0 1 2
 do
     for act in rational
     do
-        for task in airy1d # logarithm # cosine 
+        for task in logarithm #cosine 
         do
             for h in 50
             do
