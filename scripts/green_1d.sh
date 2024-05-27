@@ -1,8 +1,8 @@
-for s in 0 1 2 3 4
+for s in 3 4
 do
     for act in rational
     do
-        for task in schrodinger1d poisson1d airy1d boundary1d # logarithm # cosine 
+        for task in logarithm #cosine #schrodinger1d poisson1d airy1d boundary1d # logarithm # cosine 
         do
             for h in 50
             do
@@ -12,7 +12,7 @@ do
                     do
                         for aug in none aug2 
                         do 
-                            python green_1d.py --device 1 --task $task --act $act --seed $s --ep_adam 10000 --h $h --p $p --n $n --bsz 200 --sch --aug $aug
+                            python green_1d.py --device 2 --task $task --act $act --seed $s --ep_adam 10000 --h $h --p $p --n $n --bsz 200 --sch --aug $aug
                         done
                     done
                 done
