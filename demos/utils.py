@@ -12,7 +12,7 @@ def create_expdf(data_root):
             model_nm, act, res, h, p, seed, aug = settings
             k, m = 0, 0
         elif len(settings) == 9:
-            model_nm, act, res, h, k, m, p, aug, seed = settings
+            model_nm, act, res, h, k, m, p, seed, aug = settings
         else:
             print(exp_hist)
 
