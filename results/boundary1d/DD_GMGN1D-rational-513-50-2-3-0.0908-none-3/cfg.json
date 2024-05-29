@@ -1,0 +1,1 @@
+{"device": 2, "aug": "none", "task": "boundary1d", "train_post": "3.00e-02", "test_post": "3.00e-02", "seed": 3, "lr_adam": 0.01, "ep_adam": 10000, "sch": true, "bsz": 200, "n": 9, "k": 2, "m": 3, "act": "rational", "h": 50}

@@ -1,0 +1,1 @@
+{"device": 1, "aug": "aug2", "task": "airy1d", "train_post": "3.00e-02", "test_post": "3.00e-02", "seed": 0, "lr_adam": 0.01, "ep_adam": 10000, "sch": true, "bsz": 200, "n": 9, "k": 1, "m": 7, "act": "rational", "h": 50}
