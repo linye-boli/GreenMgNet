@@ -41,8 +41,6 @@ if __name__ == '__main__':
     parser.add_argument('--bsz', type=int, default=8,
                         help='batch size')
     
-
-
     # parameters for GreenNet
     parser.add_argument('--n', type=int, default=9,
                         help='number of total levels')
@@ -84,10 +82,10 @@ if __name__ == '__main__':
         '{:.4f}'.format(args.p), args.aug, str(args.seed)])
     hist_outpath, pred_outpath, nn_outpath, kernel_outpath, cfg_outpath = init_records(log_root, task_nm, exp_nm)
 
-    # if os.path.exists(hist_outpath):
-    #     print(f"{hist_outpath} file exists")
-    #     print('-'*20)
-    #     exit()
+    if os.path.exists(hist_outpath):
+        print(f"{hist_outpath} file exists")
+        print('-'*20)
+        exit()
 
     print('output files:')
     print(hist_outpath)
@@ -106,9 +104,6 @@ if __name__ == '__main__':
     train_loader, test_loader = load_dataset_1d(
         args.task, data_root, bsz=args.bsz, res=res, 
         train_post=args.train_post, test_post=args.test_post)
-
-    import pdb 
-    pdb.set_trace()
 
     ################################################################
     # build model
